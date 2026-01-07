@@ -6,56 +6,54 @@
 
 #include "snprogram.h"
 
-void sn_symbol_next(sn_symbol_t *pos)
+bool sn_cur_more(sn_program_t *prog)
 {
-    assert(pos->length > 0);
-    pos->value++;
-    pos->length--;
+    return prog->cur < prog->last;
 }
 
-void sn_symbol_skip_whitespace(sn_symbol_t *pos)
+void sn_cur_skip_whitespace(sn_program_t *prog)
 {
-    while (pos->length > 0 && isspace(pos->value[0])) {
-        sn_symbol_next(pos);
+    while (sn_cur_more(prog) && isspace(*prog->cur)) {
+        prog->cur++;
     }
 }
 
-int64_t sn_symbol_parse_integer(sn_symbol_t *pos)
+int64_t sn_cur_parse_integer(sn_program_t *prog)
 {
     int64_t sign = 1;
     int64_t value = 0;
 
-    if (pos->value[0] == '-') {
+    if (*prog->cur == '-') {
         sign = -1;
-        sn_symbol_next(pos);
+        prog->cur++;
     }
 
-    while (pos->length > 0 && isdigit(pos->value[0])) {
-        value = 10 * value + pos->value[0] - '0';
-        sn_symbol_next(pos);
+    while (sn_cur_more(prog) && isdigit(*prog->cur)) {
+        value = 10 * value + *prog->cur - '0';
+        prog->cur++;
     }
 
     return sign * value;
 }
 
-bool sn_symbol_is_integer(sn_symbol_t *pos)
+bool sn_cur_is_integer(sn_program_t *prog)
 {
-    char c = pos->value[0];
-    return isdigit(c) || (c == '-' && pos->length >= 2 && isdigit(pos->value[1]));
+    char c = *prog->cur;
+    return isdigit(c) || (c == '-' && prog->cur + 1 < prog->last && isdigit(prog->cur[1]));
 }
 
-sn_sexpr_t *sn_program_parse_sexpr(sn_program_t *prog, sn_symbol_t *pos)
+sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
 {
-    sn_symbol_skip_whitespace(pos);
-    if (pos->length == 0) {
+    sn_cur_skip_whitespace(prog);
+    if (!sn_cur_more(prog)) {
         return NULL;
     }
 
     sn_sexpr_t *expr = calloc(1, sizeof *expr);
 
-    if (sn_symbol_is_integer(pos)) {
+    if (sn_cur_is_integer(prog)) {
         expr->type = SN_SEXPR_TYPE_INTEGER;
-        expr->vint = sn_symbol_parse_integer(pos);
+        expr->vint = sn_cur_parse_integer(prog);
     }
     return expr;
 }
@@ -63,20 +61,20 @@ sn_sexpr_t *sn_program_parse_sexpr(sn_program_t *prog, sn_symbol_t *pos)
 sn_program_t *sn_program_create(const char *source, size_t size)
 {
     sn_program_t *prog = calloc(1, sizeof *prog);
-    prog->src.value = malloc(size);
-    prog->src.length = size;
-    memcpy(prog->src.value, source, size);
+    prog->cur = source;
+    prog->last = source + size;
 
     prog->expr_tail = &prog->expr_head;
     prog->symbol_tail = &prog->symbol_head;
 
     sn_sexpr_t *expr = NULL;
-    sn_symbol_t src = prog->src;
-    while ((expr = sn_program_parse_sexpr(prog, &src)) != NULL) {
+    while ((expr = sn_cur_parse_sexpr(prog)) != NULL) {
         *prog->expr_tail = expr;
         prog->expr_tail = &expr->next;
     }
-    
+
+    prog->cur = NULL;
+    prog->last = NULL;
     return prog;
 }
 
@@ -86,7 +84,6 @@ void sn_program_destroy(sn_program_t *prog)
         return;
     }
 
-    free(prog->src.value);
     free(prog);
 }
 

@@ -5,9 +5,8 @@
 struct sn_symbol_st
 {
     size_t length;
-    char *value;
-
     sn_symbol_t *next;
+    char value[];
 };
 
 struct sn_program_st
@@ -18,14 +17,15 @@ struct sn_program_st
     sn_symbol_t *symbol_head;
     sn_symbol_t **symbol_tail;
 
-    sn_symbol_t src;
+    const char *cur;
+    const char *last;
 };
 
 struct sn_sexpr_st
 {
     sn_sexpr_type_t type;
     int64_t vint;
-    sn_symbol_t sym;
+    sn_symbol_t *sym;
     sn_sexpr_t *child_head;
     sn_sexpr_t **child_tail;
     sn_sexpr_t *next;
