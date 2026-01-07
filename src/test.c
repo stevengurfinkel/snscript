@@ -219,6 +219,32 @@ void test_parse_multiple_lists(void)
     sn_program_destroy(prog);
 }
 
+void test_parse_with_comments(void)
+{
+    char *src = ";; beginning comment\n"
+                "(1 (2) ;; end of line\n"
+                "3) ();; end of file";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
+    ASSERT_EQ(expr->child_head->vint, 1);
+
+    ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->next->child_head->type, SN_SEXPR_TYPE_INTEGER);
+    ASSERT_EQ(expr->child_head->next->child_head->vint, 2);
+
+    ASSERT_EQ(expr->child_head->next->next->type, SN_SEXPR_TYPE_INTEGER);
+    ASSERT_EQ(expr->child_head->next->next->vint, 3);
+
+    ASSERT_EQ(expr->next->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_NULL(expr->next->child_head);
+
+    ASSERT_NULL(expr->next->next);
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -235,6 +261,7 @@ int main(int argc, char **argv)
     test_parse_list_of_integers_with_spaces();
     test_parse_list_of_some_negative_integers();
     test_parse_multiple_lists();
+    test_parse_with_comments();
     printf("PASSED\n");
     return 0;
 }

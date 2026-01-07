@@ -13,11 +13,35 @@ bool sn_cur_more(sn_program_t *prog)
     return prog->cur < prog->last;
 }
 
-void sn_cur_skip_whitespace(sn_program_t *prog)
+bool sn_cur_did_skip_comment(sn_program_t *prog)
 {
+    if (prog->cur + 1 < prog->last &&
+        prog->cur[0] == ';' &&
+        prog->cur[1] == ';')
+    {
+        while (sn_cur_more(prog) && *prog->cur != '\n') {
+            prog->cur++;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool sn_cur_did_skip_whitespace(sn_program_t *prog)
+{
+    bool did_skip = false;
     while (sn_cur_more(prog) && isspace(*prog->cur)) {
         prog->cur++;
+        did_skip = true;
     }
+
+    return did_skip;
+}
+
+void sn_cur_skip_whitespace(sn_program_t *prog)
+{
+    while (sn_cur_did_skip_whitespace(prog) || sn_cur_did_skip_comment(prog));
 }
 
 int64_t sn_cur_parse_integer(sn_program_t *prog)
