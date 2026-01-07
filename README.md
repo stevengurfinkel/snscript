@@ -1,0 +1,2 @@
+# snscript
+Custom Scripting Language
