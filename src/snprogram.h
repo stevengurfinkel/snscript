@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "snscript.h"
 
 struct sn_symbol_st
@@ -19,6 +20,8 @@ struct sn_program_st
 
     const char *cur;
     const char *last;
+
+    FILE *msg;
 };
 
 struct sn_sexpr_st

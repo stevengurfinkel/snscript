@@ -98,6 +98,32 @@ void test_parse_two_integers(void)
     sn_program_destroy(prog);
 }
 
+void test_parse_empty_list(void)
+{
+    char *src = "()";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_NULL(expr->child_head);
+    ASSERT_NULL(expr->next);
+
+    sn_program_destroy(prog);
+}
+
+void test_parse_empty_list_with_spaces(void)
+{
+    char *src = "  (  )  ";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_NULL(expr->child_head);
+    ASSERT_NULL(expr->next);
+
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -107,6 +133,8 @@ int main(int argc, char **argv)
     test_parse_single_digit();
     test_parse_single_negative_digit();
     test_parse_two_integers();
+    test_parse_empty_list();
+    test_parse_empty_list_with_spaces();
     printf("PASSED\n");
     return 0;
 }

@@ -42,10 +42,22 @@ bool sn_cur_is_integer(sn_program_t *prog)
     return isdigit(c) || (c == '-' && prog->cur + 1 < prog->last && isdigit(prog->cur[1]));
 }
 
+void sn_cur_consume(sn_program_t *prog, char c)
+{
+    if (!sn_cur_more(prog)) {
+        fprintf(prog->msg, "Error: expected %c but got end of input\n", c);
+    }
+    if (*prog->cur != c) {
+        fprintf(prog->msg, "Error: expected %c but got %c\n", c, *prog->cur);
+    }
+
+    prog->cur++;
+}
+
 sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
 {
     sn_cur_skip_whitespace(prog);
-    if (!sn_cur_more(prog)) {
+    if (!sn_cur_more(prog) || *prog->cur == ')') {
         return NULL;
     }
 
@@ -54,6 +66,20 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
     if (sn_cur_is_integer(prog)) {
         expr->type = SN_SEXPR_TYPE_INTEGER;
         expr->vint = sn_cur_parse_integer(prog);
+    }
+    else if (*prog->cur == '(') {
+        expr->type = SN_SEXPR_TYPE_SEXPR;
+        expr->child_tail = &expr->child_head;
+
+        sn_cur_consume(prog, '(');
+
+        sn_sexpr_t *child = NULL;
+        while ((child = sn_cur_parse_sexpr(prog)) != NULL) {
+            *expr->child_tail = child;
+            expr->child_tail = &child->next;
+        }
+
+        sn_cur_consume(prog, ')');
     }
     return expr;
 }
@@ -66,6 +92,8 @@ sn_program_t *sn_program_create(const char *source, size_t size)
 
     prog->expr_tail = &prog->expr_head;
     prog->symbol_tail = &prog->symbol_head;
+
+    prog->msg = stderr;
 
     sn_sexpr_t *expr = NULL;
     while ((expr = sn_cur_parse_sexpr(prog)) != NULL) {
