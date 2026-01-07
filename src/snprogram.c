@@ -13,12 +13,14 @@ bool sn_cur_more(sn_program_t *prog)
     return prog->cur < prog->last;
 }
 
+bool sn_cur_two_more(sn_program_t *prog)
+{
+    return prog->cur + 1 < prog->last;
+}
+
 bool sn_cur_did_skip_comment(sn_program_t *prog)
 {
-    if (prog->cur + 1 < prog->last &&
-        prog->cur[0] == ';' &&
-        prog->cur[1] == ';')
-    {
+    if (sn_cur_two_more(prog) && prog->cur[0] == ';' && prog->cur[1] == ';') {
         while (sn_cur_more(prog) && *prog->cur != '\n') {
             prog->cur++;
         }
@@ -65,7 +67,7 @@ int64_t sn_cur_parse_integer(sn_program_t *prog)
 bool sn_cur_is_integer(sn_program_t *prog)
 {
     char c = *prog->cur;
-    return isdigit(c) || (c == '-' && prog->cur + 1 < prog->last && isdigit(prog->cur[1]));
+    return isdigit(c) || (c == '-' && sn_cur_two_more(prog) && isdigit(prog->cur[1]));
 }
 
 void sn_cur_consume(sn_program_t *prog, char c)
@@ -89,13 +91,40 @@ void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr)
     while ((child = sn_cur_parse_sexpr(prog)) != NULL) {
         *expr->child_tail = child;
         expr->child_tail = &child->next;
+        expr->child_count++;
     }
+}
+
+void sn_program_reorder_infix_expr(sn_program_t *prog, sn_sexpr_t *expr)
+{
+    if (expr->child_count != 3) {
+        fprintf(prog->msg,
+                "Error: {} expression needs 3 elments, but has %zd\n",
+                expr->child_count);
+        return;
+    }
+
+    sn_sexpr_t *exprs[3] = {expr->child_head,
+                            expr->child_head->next,
+                            expr->child_head->next->next};
+
+    expr->child_head = exprs[1];
+    expr->child_head->next = exprs[0];
+    expr->child_head->next->next = exprs[2];
+    expr->child_tail = NULL;
+}
+
+bool sn_cur_is_expr_end(sn_program_t *prog)
+{
+    return !sn_cur_more(prog) ||
+           *prog->cur == ')' ||
+           *prog->cur == '}';
 }
 
 sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
 {
     sn_cur_skip_whitespace(prog);
-    if (!sn_cur_more(prog) || *prog->cur == ')') {
+    if (sn_cur_is_expr_end(prog)) {
         return NULL;
     }
 
@@ -109,6 +138,12 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
         sn_cur_consume(prog, '(');
         sn_cur_parse_sexpr_list(prog, expr);
         sn_cur_consume(prog, ')');
+    }
+    else if (*prog->cur == '{') {
+        sn_cur_consume(prog, '{');
+        sn_cur_parse_sexpr_list(prog, expr);
+        sn_cur_consume(prog, '}');
+        sn_program_reorder_infix_expr(prog, expr);
     }
     return expr;
 }
