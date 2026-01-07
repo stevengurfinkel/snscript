@@ -6,6 +6,8 @@
 
 #include "snprogram.h"
 
+sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog);
+
 bool sn_cur_more(sn_program_t *prog)
 {
     return prog->cur < prog->last;
@@ -54,6 +56,18 @@ void sn_cur_consume(sn_program_t *prog, char c)
     prog->cur++;
 }
 
+void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr)
+{
+    expr->type = SN_SEXPR_TYPE_SEXPR;
+    expr->child_tail = &expr->child_head;
+
+    sn_sexpr_t *child = NULL;
+    while ((child = sn_cur_parse_sexpr(prog)) != NULL) {
+        *expr->child_tail = child;
+        expr->child_tail = &child->next;
+    }
+}
+
 sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
 {
     sn_cur_skip_whitespace(prog);
@@ -68,17 +82,8 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
         expr->vint = sn_cur_parse_integer(prog);
     }
     else if (*prog->cur == '(') {
-        expr->type = SN_SEXPR_TYPE_SEXPR;
-        expr->child_tail = &expr->child_head;
-
         sn_cur_consume(prog, '(');
-
-        sn_sexpr_t *child = NULL;
-        while ((child = sn_cur_parse_sexpr(prog)) != NULL) {
-            *expr->child_tail = child;
-            expr->child_tail = &child->next;
-        }
-
+        sn_cur_parse_sexpr_list(prog, expr);
         sn_cur_consume(prog, ')');
     }
     return expr;
@@ -90,16 +95,8 @@ sn_program_t *sn_program_create(const char *source, size_t size)
     prog->cur = source;
     prog->last = source + size;
 
-    prog->expr_tail = &prog->expr_head;
-    prog->symbol_tail = &prog->symbol_head;
-
     prog->msg = stderr;
-
-    sn_sexpr_t *expr = NULL;
-    while ((expr = sn_cur_parse_sexpr(prog)) != NULL) {
-        *prog->expr_tail = expr;
-        prog->expr_tail = &expr->next;
-    }
+    sn_cur_parse_sexpr_list(prog, &prog->expr);
 
     prog->cur = NULL;
     prog->last = NULL;
@@ -117,7 +114,7 @@ void sn_program_destroy(sn_program_t *prog)
 
 sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog)
 {
-    return prog->expr_head;
+    return prog->expr.child_head;
 }
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str)
