@@ -17,7 +17,6 @@ struct sn_sexpr_st
     sn_symbol_t *sym;
     size_t child_count;
     sn_sexpr_t *child_head;
-    sn_sexpr_t **child_tail;
     sn_sexpr_t *next;
 };
 

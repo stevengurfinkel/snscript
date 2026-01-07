@@ -85,12 +85,12 @@ void sn_cur_consume(sn_program_t *prog, char c)
 void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr)
 {
     expr->type = SN_SEXPR_TYPE_SEXPR;
-    expr->child_tail = &expr->child_head;
+    sn_sexpr_t **child_tail = &expr->child_head;
 
     sn_sexpr_t *child = NULL;
     while ((child = sn_cur_parse_sexpr(prog)) != NULL) {
-        *expr->child_tail = child;
-        expr->child_tail = &child->next;
+        *child_tail = child;
+        child_tail = &child->next;
         expr->child_count++;
     }
 }
@@ -111,7 +111,6 @@ void sn_program_reorder_infix_expr(sn_program_t *prog, sn_sexpr_t *expr)
     expr->child_head = exprs[1];
     expr->child_head->next = exprs[0];
     expr->child_head->next->next = exprs[2];
-    expr->child_tail = NULL;
 }
 
 bool sn_cur_is_expr_end(sn_program_t *prog)
