@@ -59,3 +59,6 @@ void sn_symvec_init(sn_symvec_t *symvec);
 int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);
 int sn_symvec_append(sn_symvec_t *symvec, sn_symbol_t *name);
 void sn_symvec_deinit(sn_symvec_t *symvec);
+
+bool sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args);
+bool sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args);

@@ -25,7 +25,7 @@ typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_sexpr_st sn_sexpr_t;
 typedef struct sn_value_st sn_value_t;
 typedef struct sn_user_fn_st sn_user_fn_t;
-typedef void (*sn_builtin_fn_t)(sn_value_t *ret, size_t arg_count, const sn_value_t *args);
+typedef bool (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 typedef struct sn_scope_st sn_scope_t;
 typedef struct sn_var_st sn_var_t;
 
