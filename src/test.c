@@ -307,6 +307,106 @@ void test_parse_fancy_symbols(void)
     sn_program_destroy(prog);
 }
 
+void test_parse_repeat_symbols(void)
+{
+    char *src = "hello? hello?";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->sym, "hello?"));
+
+    ASSERT_EQ(expr->next->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT_EQ(expr->sym, expr->next->sym);
+    ASSERT_NULL(expr->next->next);
+
+    sn_program_destroy(prog);
+}
+
+void test_parse_list_and_symbols(void)
+{
+    char *src = "(if {a > 0} a (- a))";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_NULL(expr->next);
+
+    expr = expr->child_head;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->sym, "if"));
+
+    expr = expr->next;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->child_head->sym, ">"));
+
+    ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SYMBOL);
+    sn_symbol_t *a = expr->child_head->next->sym;
+    ASSERT(sn_symbol_equals_string(a, "a"));
+
+    ASSERT_EQ(expr->child_head->next->next->type, SN_SEXPR_TYPE_INTEGER);
+    ASSERT_EQ(expr->child_head->next->next->vint, 0);
+    ASSERT_NULL(expr->child_head->next->next->next);
+
+    expr = expr->next;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT_EQ(expr->sym, a);
+
+    expr = expr->next;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->child_head->sym, "-"));
+    ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT_EQ(expr->child_head->next->sym, a);
+    ASSERT_NULL(expr->child_head->next->next);
+    ASSERT_NULL(expr->next);
+
+    sn_program_destroy(prog);
+}
+
+void test_parse_list_symbols_comments(void)
+{
+    char *src = "(if {a > 0} ;; check if a is positive\n"
+                "  a ;; if so, return a\n"
+                "  (- a)) ;; otherwise, negate a\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_NULL(expr->next);
+
+    expr = expr->child_head;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->sym, "if"));
+
+    expr = expr->next;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->child_head->sym, ">"));
+
+    ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SYMBOL);
+    sn_symbol_t *a = expr->child_head->next->sym;
+    ASSERT(sn_symbol_equals_string(a, "a"));
+
+    ASSERT_EQ(expr->child_head->next->next->type, SN_SEXPR_TYPE_INTEGER);
+    ASSERT_EQ(expr->child_head->next->next->vint, 0);
+    ASSERT_NULL(expr->child_head->next->next->next);
+
+    expr = expr->next;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT_EQ(expr->sym, a);
+
+    expr = expr->next;
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->child_head->sym, "-"));
+    ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT_EQ(expr->child_head->next->sym, a);
+    ASSERT_NULL(expr->child_head->next->next);
+    ASSERT_NULL(expr->next);
+
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -328,6 +428,9 @@ int main(int argc, char **argv)
     test_parse_symbol();
     test_parse_two_symbols();
     test_parse_fancy_symbols();
+    test_parse_repeat_symbols();
+    test_parse_list_and_symbols();
+    test_parse_list_symbols_comments();
     printf("PASSED\n");
     return 0;
 }

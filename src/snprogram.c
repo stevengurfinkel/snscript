@@ -67,7 +67,7 @@ void sn_cur_skip_whitespace(sn_program_t *prog)
 
 bool sn_cur_is_symbol(sn_program_t *prog)
 {
-    const char *ok = "!@$%^&*-_=+[]:<>/?";
+    const char *ok = "!@$%^&*-_=+[]:<>./?";
     return sn_cur_more(prog) &&
            (isalnum(*prog->cur) || strchr(ok, *prog->cur) != NULL);
 }
