@@ -35,12 +35,33 @@ sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const 
     return sn_program_add_symbol(prog, start, size);
 }
 
+sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
+{
+    sn_symbol_t *name = sn_program_default_symbol(prog, str);
+    int idx = sn_symvec_append(&prog->builtin_idxs, name);
+    assert(idx >= 0 && idx < SN_PROGRAM_MAX_BUILTIN_COUNT);
+
+    return &prog->builtin_values[idx];
+}
+
+void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn)
+{
+    sn_value_t *value = sn_program_add_builtin_value(prog, str);
+    value->type = SN_VALUE_TYPE_BUILTIN_FN;
+    value->builtin_fn = fn;
+}
+
 void sn_program_add_default_symbols(sn_program_t *prog)
 {
+    sn_symvec_init(&prog->builtin_idxs);
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
     prog->sn_if = sn_program_default_symbol(prog, "if");
-    prog->sn_plus = sn_program_default_symbol(prog, "+");
-    prog->sn_minus = sn_program_default_symbol(prog, "-");
+
+    sn_value_t *null = sn_program_add_builtin_value(prog, "null");
+    null->type = SN_VALUE_TYPE_NULL;
+
+    sn_program_add_builtin_fn(prog, "+", NULL);
+    sn_program_add_builtin_fn(prog, "-", NULL);
 }
 
 sn_program_t *sn_program_create(const char *source, size_t size)

@@ -398,7 +398,7 @@ void test_parse_list_symbols_comments(void)
     expr = expr->next;
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SYMBOL);
-    ASSERT_EQ(expr->child_head->sym, prog->sn_minus);
+    ASSERT(sn_symbol_equals_string(expr->child_head->sym, "-"));
     ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SYMBOL);
     ASSERT_EQ(expr->child_head->next->sym, a);
     ASSERT_NULL(expr->child_head->next->next);

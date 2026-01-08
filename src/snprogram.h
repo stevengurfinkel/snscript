@@ -3,12 +3,21 @@
 #include <stdio.h>
 #include "snscript.h"
 
+#define SN_PROGRAM_MAX_BUILTIN_COUNT 64
+
 struct sn_symbol_st
 {
     size_t length;
     sn_symbol_t *next;
     char value[];
 };
+
+typedef struct sn_symvec_st
+{
+    int capacity;
+    int count;
+    sn_symbol_t **names;
+} sn_symvec_t;
 
 struct sn_sexpr_st
 {
@@ -18,20 +27,6 @@ struct sn_sexpr_st
     size_t child_count;
     sn_sexpr_t *child_head;
     sn_sexpr_t *next;
-};
-
-struct sn_var_st
-{
-    int idx;
-    sn_symbol_t *name;
-    sn_var_t *next;
-};
-
-struct sn_scope_st
-{
-    sn_scope_t *parent;
-    size_t var_count;
-    sn_var_t *vars;
 };
 
 struct sn_program_st
@@ -46,13 +41,13 @@ struct sn_program_st
 
     FILE *msg;
 
+    // special forms
     sn_symbol_t *sn_fn;
     sn_symbol_t *sn_if;
-    sn_symbol_t *sn_plus;
-    sn_symbol_t *sn_minus;
 
-    sn_scope_t globl_scope;
-    sn_value_t *global_values;
+    // bulitin functions, null
+    sn_symvec_t builtin_idxs;
+    sn_value_t builtin_values[SN_PROGRAM_MAX_BUILTIN_COUNT];
 };
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
@@ -60,4 +55,7 @@ sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog);
 sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end);
 void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr);
 
-
+void sn_symvec_init(sn_symvec_t *symvec);
+int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);
+int sn_symvec_append(sn_symvec_t *symvec, sn_symbol_t *name);
+void sn_symvec_deinit(sn_symvec_t *symvec);
