@@ -57,3 +57,7 @@ struct sn_program_st
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog);
+sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end);
+void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr);
+
+
