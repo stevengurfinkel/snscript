@@ -260,7 +260,51 @@ void test_parse_curlys(void)
     ASSERT_EQ(expr->child_head->next->next->vint, 3);
     ASSERT_NULL(expr->child_head->next->next->next);
     sn_program_destroy(prog);
+}
 
+void test_parse_symbol(void)
+{
+    char *src = "hello";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->sym, src));
+    ASSERT_NULL(expr->next);
+
+    sn_program_destroy(prog);
+}
+
+void test_parse_two_symbols(void)
+{
+    char *src = "hello world";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->sym, "hello"));
+
+    ASSERT_EQ(expr->next->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->next->sym, "world"));
+    ASSERT_NULL(expr->next->next);
+
+    sn_program_destroy(prog);
+}
+
+void test_parse_fancy_symbols(void)
+{
+    char *src = "hello? <";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+
+    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->sym, "hello?"));
+
+    ASSERT_EQ(expr->next->type, SN_SEXPR_TYPE_SYMBOL);
+    ASSERT(sn_symbol_equals_string(expr->next->sym, "<"));
+    ASSERT_NULL(expr->next->next);
+
+    sn_program_destroy(prog);
 }
 
 int main(int argc, char **argv)
@@ -281,6 +325,9 @@ int main(int argc, char **argv)
     test_parse_multiple_lists();
     test_parse_with_comments();
     test_parse_curlys();
+    test_parse_symbol();
+    test_parse_two_symbols();
+    test_parse_fancy_symbols();
     printf("PASSED\n");
     return 0;
 }

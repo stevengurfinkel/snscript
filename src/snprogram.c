@@ -30,6 +30,25 @@ bool sn_cur_did_skip_comment(sn_program_t *prog)
     return false;
 }
 
+sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end)
+{
+    size_t size = end - start;
+    for (sn_symbol_t *sym = prog->symbol_head; sym != NULL; sym = sym->next) {
+        if (sym->length == size && memcmp(sym->value, start, size) == 0) {
+            return sym;
+        }
+    }
+
+    sn_symbol_t *sym = calloc(1, sizeof *sym + size);
+    sym->length = size;
+    memcpy(sym->value, start, size);
+
+    *prog->symbol_tail = sym;
+    prog->symbol_tail = &sym->next;
+
+    return sym;
+}
+
 bool sn_cur_did_skip_whitespace(sn_program_t *prog)
 {
     bool did_skip = false;
@@ -44,6 +63,13 @@ bool sn_cur_did_skip_whitespace(sn_program_t *prog)
 void sn_cur_skip_whitespace(sn_program_t *prog)
 {
     while (sn_cur_did_skip_whitespace(prog) || sn_cur_did_skip_comment(prog));
+}
+
+bool sn_cur_is_symbol(sn_program_t *prog)
+{
+    const char *ok = "!@$%^&*-_=+[]:<>/?";
+    return sn_cur_more(prog) &&
+           (isalnum(*prog->cur) || strchr(ok, *prog->cur) != NULL);
 }
 
 int64_t sn_cur_parse_integer(sn_program_t *prog)
@@ -62,6 +88,16 @@ int64_t sn_cur_parse_integer(sn_program_t *prog)
     }
 
     return sign * value;
+}
+
+sn_symbol_t *sn_cur_parse_symbol(sn_program_t *prog)
+{
+    const char *start = prog->cur;
+    while (sn_cur_is_symbol(prog)) {
+        prog->cur++;
+    }
+
+    return sn_program_get_symbol(prog, start, prog->cur);
 }
 
 bool sn_cur_is_integer(sn_program_t *prog)
@@ -144,6 +180,10 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
         sn_cur_consume(prog, '}');
         sn_program_reorder_infix_expr(prog, expr);
     }
+    else {
+        expr->type = SN_SEXPR_TYPE_SYMBOL;
+        expr->sym = sn_cur_parse_symbol(prog);
+    }
     return expr;
 }
 
@@ -152,6 +192,8 @@ sn_program_t *sn_program_create(const char *source, size_t size)
     sn_program_t *prog = calloc(1, sizeof *prog);
     prog->cur = source;
     prog->last = source + size;
+
+    prog->symbol_tail = &prog->symbol_head;
 
     prog->msg = stderr;
     sn_cur_parse_sexpr_list(prog, &prog->expr);
