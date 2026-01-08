@@ -376,7 +376,7 @@ void test_parse_list_symbols_comments(void)
 
     expr = expr->child_head;
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
-    ASSERT(sn_symbol_equals_string(expr->sym, "if"));
+    ASSERT_EQ(expr->sym, prog->sn_if);
 
     expr = expr->next;
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
@@ -398,12 +398,20 @@ void test_parse_list_symbols_comments(void)
     expr = expr->next;
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SYMBOL);
-    ASSERT(sn_symbol_equals_string(expr->child_head->sym, "-"));
+    ASSERT_EQ(expr->child_head->sym, prog->sn_minus);
     ASSERT_EQ(expr->child_head->next->type, SN_SEXPR_TYPE_SYMBOL);
     ASSERT_EQ(expr->child_head->next->sym, a);
     ASSERT_NULL(expr->child_head->next->next);
     ASSERT_NULL(expr->next);
 
+    sn_program_destroy(prog);
+}
+
+void test_compile_fn(void)
+{
+    char *src = "(fn (main)\n"
+                "  (+ 1 1))\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
     sn_program_destroy(prog);
 }
 
@@ -431,6 +439,7 @@ int main(int argc, char **argv)
     test_parse_repeat_symbols();
     test_parse_list_and_symbols();
     test_parse_list_symbols_comments();
+    test_compile_fn();
     printf("PASSED\n");
     return 0;
 }

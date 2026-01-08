@@ -31,7 +31,15 @@ struct sn_program_st
     const char *last;
 
     FILE *msg;
+
+    sn_symbol_t *sn_fn;
+    sn_symbol_t *sn_if;
+    sn_symbol_t *sn_plus;
+    sn_symbol_t *sn_minus;
 };
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog);
+
+bool sn_program_compile(sn_program_t *prog);
+
