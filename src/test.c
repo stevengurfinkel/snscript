@@ -439,6 +439,15 @@ void test_eval_sum(void)
     sn_program_destroy(prog);
 }
 
+void test_eval_nested(void)
+{
+    char *src = "(+ 1 2 3 (- -4))\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_value_t val = sn_program_run(prog);
+    ASSERT_EQ_INT(val, 10);
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -465,6 +474,7 @@ int main(int argc, char **argv)
     test_parse_list_symbols_comments();
     test_eval_literal();
     test_eval_sum();
+    test_eval_nested();
     printf("PASSED\n");
     return 0;
 }
