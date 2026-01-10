@@ -451,10 +451,11 @@ void test_eval_nested(void)
 void test_variable(void)
 {
     char *src = "(let x 12)\n"
-                "(+ x x)\n";
+                "(let y 13)\n"
+                "(+ x y)\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
     sn_value_t val = sn_program_run(prog);
-    ASSERT_EQ_INT(val, 24);
+    ASSERT_EQ_INT(val, 25);
     sn_program_destroy(prog);
 }
 

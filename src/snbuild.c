@@ -161,6 +161,10 @@ void sn_sexpr_link_vars(sn_sexpr_t *expr, sn_rtype_t parent_type)
 
         name->ref.scope = SN_SCOPE_GLOBAL;
         name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
+        if (name->ref.index < 0) {
+            fprintf(prog->msg, "Error: %s redeclared\n", name->sym->value);
+            abort();
+        }
     }
 
     if (expr->rtype == SN_RTYPE_VAR) {
