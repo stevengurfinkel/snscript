@@ -452,7 +452,7 @@ void test_eval_nested(void)
 void test_variable(void)
 {
     char *src = "(let x 12)\n"
-                "(let y 13)\n"
+                "(let y (+ x 1))\n"
                 "(+ x y)\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
     sn_value_t val = sn_program_run(prog);
@@ -463,6 +463,15 @@ void test_variable(void)
 void test_null(void)
 {
     char *src = "null\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_value_t val = sn_program_run(prog);
+    ASSERT_NULL_TYPE(val);
+    sn_program_destroy(prog);
+}
+
+void test_println(void)
+{
+    char *src = "(println (+ 1 2) (+ 2 3))\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
     sn_value_t val = sn_program_run(prog);
     ASSERT_NULL_TYPE(val);
@@ -498,6 +507,7 @@ int main(int argc, char **argv)
     test_eval_nested();
     test_variable();
     test_null();
+    test_println();
     printf("PASSED\n");
     return 0;
 }

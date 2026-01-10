@@ -34,3 +34,31 @@ bool sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args)
 
     return true;
 }
+
+bool sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_NULL;
+    for (int i = 0; i < arg_count; i++) {
+        if (i != 0) {
+            putchar(' ');
+        }
+        switch (args[i].type) {
+            case SN_VALUE_TYPE_INVALID:
+                return false;
+            case SN_VALUE_TYPE_NULL:
+                printf("null");
+                break;
+            case SN_VALUE_TYPE_INTEGER:
+                printf("%ld", args[i].i);
+                break;
+            case SN_VALUE_TYPE_USER_FN:
+                printf("<user fn>");
+                break;
+            case SN_VALUE_TYPE_BUILTIN_FN:
+                printf("<builtin fn>");
+                break;
+        }
+    }
+    printf("\n");
+    return true;
+}

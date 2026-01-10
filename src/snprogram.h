@@ -114,3 +114,5 @@ void sn_symvec_deinit(sn_symvec_t *symvec);
 
 bool sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args);
 bool sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args);
+bool sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args);
+

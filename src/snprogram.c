@@ -71,6 +71,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
 
     sn_program_add_builtin_fn(prog, "+", sn_add);
     sn_program_add_builtin_fn(prog, "-", sn_sub);
+    sn_program_add_builtin_fn(prog, "println", sn_println);
 }
 
 sn_program_t *sn_program_create(const char *source, size_t size)
