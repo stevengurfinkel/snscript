@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include "snprogram.h"
 
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
@@ -152,6 +153,15 @@ bool sn_program_lookup_symbol(sn_program_t *prog, sn_symbol_t *sym, sn_ref_t *re
 void sn_sexpr_link_vars(sn_sexpr_t *expr, sn_rtype_t parent_type)
 {
     sn_program_t *prog = expr->prog;
+
+    if (expr->rtype == SN_RTYPE_LET_EXPR) {
+        assert(expr->child_head->rtype == SN_RTYPE_LET_KEYW);
+
+        sn_sexpr_t *name = expr->child_head->next;
+
+        name->ref.scope = SN_SCOPE_GLOBAL;
+        name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
+    }
 
     if (expr->rtype == SN_RTYPE_VAR) {
         if (!sn_program_lookup_symbol(prog, expr->sym, &expr->ref)) {

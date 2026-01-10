@@ -448,6 +448,16 @@ void test_eval_nested(void)
     sn_program_destroy(prog);
 }
 
+void test_variable(void)
+{
+    char *src = "(let x 12)\n"
+                "(+ x x)\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_value_t val = sn_program_run(prog);
+    ASSERT_EQ_INT(val, 24);
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -475,6 +485,7 @@ int main(int argc, char **argv)
     test_eval_literal();
     test_eval_sum();
     test_eval_nested();
+    test_variable();
     printf("PASSED\n");
     return 0;
 }

@@ -1,7 +1,6 @@
+#include <assert.h>
 #include <stdlib.h>
 #include "snprogram.h"
-
-
 
 sn_value_t sn_program_run(sn_program_t *prog)
 {
@@ -78,23 +77,35 @@ sn_value_t sn_program_eval_call(sn_program_t *prog, sn_sexpr_t *expr)
     return ret;
 }
 
+sn_value_t sn_expr_eval_let(sn_sexpr_t *expr)
+{
+    sn_program_t *prog = expr->prog;
+    sn_sexpr_t *kw = expr->child_head;
+    sn_sexpr_t *var = kw->next;
+    sn_sexpr_t *value = var->next;
+
+    assert(kw->rtype == SN_RTYPE_LET_KEYW);
+    assert(var->rtype == SN_RTYPE_VAR);
+    assert(var->ref.scope == SN_SCOPE_GLOBAL);
+
+    prog->global_values[var->ref.index] = sn_program_eval_expr(prog, value);
+    return sn_null;
+}
+
 sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr)
 {
-    switch (expr->type) {
+    switch (expr->rtype) {
         case SN_SEXPR_TYPE_INVALID:
             abort();
             return sn_null;
-        case SN_SEXPR_TYPE_INTEGER:
+        case SN_RTYPE_LITERAL:
             return (sn_value_t){ .type = SN_VALUE_TYPE_INTEGER, .i = expr->vint };
-        case SN_SEXPR_TYPE_SYMBOL:
+        case SN_RTYPE_VAR:
             return sn_program_lookup_ref(prog, &expr->ref);
-        case SN_SEXPR_TYPE_SEXPR: {
-            sn_value_t value;
-            if (sn_sexpr_eval_special_form(expr, &value)) {
-                return value;
-            }
+        case SN_RTYPE_CALL:
             return sn_program_eval_call(prog, expr);
-        }
+        case SN_RTYPE_LET_EXPR:
+            return sn_expr_eval_let(expr);
         default:
             return sn_null;
     }
