@@ -8,7 +8,7 @@
 
 sn_symbol_t *sn_program_add_symbol(sn_program_t *prog, const char *str, size_t size)
 {
-    sn_symbol_t *sym = calloc(1, sizeof *sym + size);
+    sn_symbol_t *sym = calloc(1, sizeof *sym + size + 1);
     sym->length = size;
     memcpy(sym->value, str, size);
 

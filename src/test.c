@@ -8,6 +8,8 @@
 #define ASSERT_EQ(x, y) ASSERT((x) == (y))
 #define ASSERT_NULL(x) ASSERT_EQ(x, NULL)
 
+#define ASSERT_EQ_INT(x, y) ASSERT((x).type == SN_VALUE_TYPE_INTEGER && (x).i == (y))
+
 void test_prog_create_destroy(void)
 {
     char *src = "1234";
@@ -407,11 +409,33 @@ void test_parse_list_symbols_comments(void)
     sn_program_destroy(prog);
 }
 
-void test_compile_fn(void)
+void test_eval_literal(void)
 {
-    char *src = "(fn (main)\n"
-                "  (+ 1 1))\n";
+    char *src = "123\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_value_t val = sn_program_run(prog);
+    ASSERT_EQ_INT(val, 123);
+    sn_program_destroy(prog);
+
+    src = "-123\n";
+    prog = sn_program_create(src, strlen(src));
+    val = sn_program_run(prog);
+    ASSERT_EQ_INT(val, -123);
+    sn_program_destroy(prog);
+}
+
+void test_eval_sum(void)
+{
+    char *src = "(+ 1 2 3)\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    sn_value_t val = sn_program_run(prog);
+    ASSERT_EQ_INT(val, 6);
+    sn_program_destroy(prog);
+
+    src = "{10 - 5}\n";
+    prog = sn_program_create(src, strlen(src));
+    val = sn_program_run(prog);
+    ASSERT_EQ_INT(val, 5);
     sn_program_destroy(prog);
 }
 
@@ -439,7 +463,8 @@ int main(int argc, char **argv)
     test_parse_repeat_symbols();
     test_parse_list_and_symbols();
     test_parse_list_symbols_comments();
-    test_compile_fn();
+    test_eval_literal();
+    test_eval_sum();
     printf("PASSED\n");
     return 0;
 }

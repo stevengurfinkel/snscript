@@ -1,3 +1,4 @@
+#pragma once
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -19,6 +20,19 @@ typedef struct sn_symvec_st
     sn_symbol_t **names;
 } sn_symvec_t;
 
+typedef enum sn_scope_en
+{
+    SN_SCOPE_BUILTIN = 0,
+    SN_SCOPE_GLOBAL,
+    SN_SCOPE_LOCAL,
+} sn_scope_t;
+
+typedef struct sn_ref_st
+{
+    sn_scope_t scope;
+    int index;
+} sn_ref_t;
+
 struct sn_sexpr_st
 {
     sn_sexpr_type_t type;
@@ -27,6 +41,8 @@ struct sn_sexpr_st
     size_t child_count;
     sn_sexpr_t *child_head;
     sn_sexpr_t *next;
+
+    sn_ref_t ref;
 };
 
 struct sn_program_st
@@ -49,6 +65,8 @@ struct sn_program_st
     sn_symvec_t builtin_idxs;
     sn_value_t builtin_values[SN_PROGRAM_MAX_BUILTIN_COUNT];
 };
+
+sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr);
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog);
