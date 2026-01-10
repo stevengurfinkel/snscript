@@ -142,6 +142,7 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
     }
 
     sn_sexpr_t *expr = calloc(1, sizeof *expr);
+    expr->prog = prog;
 
     if (sn_cur_is_integer(prog)) {
         expr->type = SN_SEXPR_TYPE_INTEGER;

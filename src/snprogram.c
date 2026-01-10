@@ -38,10 +38,15 @@ sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const 
 sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
 {
     sn_symbol_t *name = sn_program_default_symbol(prog, str);
-    int idx = sn_symvec_append(&prog->builtin_idxs, name);
-    assert(idx >= 0 && idx < SN_PROGRAM_MAX_BUILTIN_COUNT);
+    int idx = sn_symvec_append(&prog->global_idxs, name);
+    assert(idx >= 0);
 
-    return &prog->builtin_values[idx];
+    sn_builtin_value_t *bvalue = calloc(1, sizeof *bvalue);
+    bvalue->next = prog->builtin_head;
+    prog->builtin_head = bvalue;
+    prog->builtin_count++;
+
+    return &bvalue->value;
 }
 
 void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn)
@@ -53,10 +58,14 @@ void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_f
 
 void sn_program_add_default_symbols(sn_program_t *prog)
 {
-    sn_symvec_init(&prog->builtin_idxs);
+    sn_symvec_init(&prog->global_idxs);
+
+    // add keywords
+    prog->sn_let = sn_program_default_symbol(prog, "let");
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
     prog->sn_if = sn_program_default_symbol(prog, "if");
 
+    // add global values
     sn_value_t *null = sn_program_add_builtin_value(prog, "null");
     null->type = SN_VALUE_TYPE_NULL;
 
@@ -75,6 +84,8 @@ sn_program_t *sn_program_create(const char *source, size_t size)
     sn_program_add_default_symbols(prog);
 
     prog->msg = stderr;
+    prog->expr.prog = prog;
+    prog->expr.rtype = SN_RTYPE_PROGRAM;
     sn_cur_parse_sexpr_list(prog, &prog->expr);
 
     prog->cur = NULL;

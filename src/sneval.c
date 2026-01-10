@@ -1,33 +1,23 @@
 #include <stdlib.h>
 #include "snprogram.h"
 
-sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
 
-void sn_sexpr_set_refs(sn_sexpr_t *expr, sn_program_t *prog)
-{
-    if (expr->type == SN_SEXPR_TYPE_SEXPR) {
-        for (sn_sexpr_t *child = expr->child_head; child != NULL; child = child->next) {
-            sn_sexpr_set_refs(child, prog);
-        }
-    }
-    else if (expr->type == SN_SEXPR_TYPE_SYMBOL) {
-        expr->ref.scope = SN_SCOPE_BUILTIN;
-        expr->ref.index = sn_symvec_idx(&prog->builtin_idxs, expr->sym);
-        if (expr->ref.index < 0) {
-            fprintf(prog->msg, "Error: %s is not declared\n", expr->sym->value);
-            abort();
-        }
-    }
-}
-
-void sn_program_set_refs(sn_program_t *prog)
-{
-    sn_sexpr_set_refs(&prog->expr, prog);   
-}
 
 sn_value_t sn_program_run(sn_program_t *prog)
 {
-    sn_program_set_refs(prog);
+    sn_program_build(prog);
+
+    prog->global_values = alloca(prog->global_idxs.count * sizeof prog->global_values[0]);
+
+    sn_builtin_value_t *bvalue = prog->builtin_head;
+    for (int i = 0; i < prog->builtin_count; i++) {
+        prog->global_values[prog->builtin_count - i - 1] = bvalue->value;
+        bvalue = bvalue->next;
+    }
+
+    for (int i = prog->builtin_count; i < prog->global_idxs.count; i++) {
+        prog->global_values[i] = sn_null;
+    }
 
     sn_value_t value = sn_null;
     for (sn_sexpr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
@@ -38,11 +28,26 @@ sn_value_t sn_program_run(sn_program_t *prog)
 
 sn_value_t sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref)
 {
-    if (ref->scope == SN_SCOPE_BUILTIN) {
-        return prog->builtin_values[ref->index];
+    if (ref->scope == SN_SCOPE_GLOBAL) {
+        return prog->global_values[ref->index];
     }
     abort();
     return sn_null;
+}
+
+bool sn_sexpr_eval_special_form(sn_sexpr_t *expr, sn_value_t *value_out)
+{
+    sn_program_t *prog = expr->prog;
+
+    if (expr->child_count == 0 || expr->child_head->type != SN_SEXPR_TYPE_SYMBOL) {
+        return false;
+    }
+
+    sn_sexpr_t *form = expr->child_head;
+    if (form->sym == prog->sn_let) {
+        
+    }
+    return false;
 }
 
 sn_value_t sn_program_eval_call(sn_program_t *prog, sn_sexpr_t *expr)
@@ -83,8 +88,13 @@ sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr)
             return (sn_value_t){ .type = SN_VALUE_TYPE_INTEGER, .i = expr->vint };
         case SN_SEXPR_TYPE_SYMBOL:
             return sn_program_lookup_ref(prog, &expr->ref);
-        case SN_SEXPR_TYPE_SEXPR:
+        case SN_SEXPR_TYPE_SEXPR: {
+            sn_value_t value;
+            if (sn_sexpr_eval_special_form(expr, &value)) {
+                return value;
+            }
             return sn_program_eval_call(prog, expr);
+        }
         default:
             return sn_null;
     }

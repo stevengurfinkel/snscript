@@ -4,7 +4,25 @@
 #include <stdio.h>
 #include "snscript.h"
 
-#define SN_PROGRAM_MAX_BUILTIN_COUNT 64
+typedef enum sn_rtype_st
+{
+    SN_RTYPE_INVALID,
+
+    SN_RTYPE_LET_KEYW,
+    SN_RTYPE_FN_KEYW,
+    SN_RTYPE_IF_KEYW,
+
+    SN_RTYPE_LET_EXPR,
+    SN_RTYPE_FN_EXPR,
+    SN_RTYPE_IF_EXPR,
+
+    SN_RTYPE_VAR,
+    SN_RTYPE_LITERAL,
+    SN_RTYPE_CALL,
+
+    SN_RTYPE_PROGRAM,
+
+} sn_rtype_t;
 
 struct sn_symbol_st
 {
@@ -22,7 +40,6 @@ typedef struct sn_symvec_st
 
 typedef enum sn_scope_en
 {
-    SN_SCOPE_BUILTIN = 0,
     SN_SCOPE_GLOBAL,
     SN_SCOPE_LOCAL,
 } sn_scope_t;
@@ -36,6 +53,7 @@ typedef struct sn_ref_st
 struct sn_sexpr_st
 {
     sn_sexpr_type_t type;
+    sn_rtype_t rtype;
     int64_t vint;
     sn_symbol_t *sym;
     size_t child_count;
@@ -43,6 +61,14 @@ struct sn_sexpr_st
     sn_sexpr_t *next;
 
     sn_ref_t ref;
+    sn_program_t *prog;
+};
+
+typedef struct sn_builtin_value_st sn_builtin_value_t;
+struct sn_builtin_value_st
+{
+    sn_value_t value;
+    sn_builtin_value_t *next;
 };
 
 struct sn_program_st
@@ -58,13 +84,21 @@ struct sn_program_st
     FILE *msg;
 
     // special forms
+    sn_symbol_t *sn_let;
     sn_symbol_t *sn_fn;
     sn_symbol_t *sn_if;
 
     // bulitin functions, null
-    sn_symvec_t builtin_idxs;
-    sn_value_t builtin_values[SN_PROGRAM_MAX_BUILTIN_COUNT];
+    int builtin_count;
+    sn_builtin_value_t *builtin_head;
+
+    sn_symvec_t global_idxs;
+    sn_value_t *global_values;
 };
+
+extern sn_value_t sn_null;
+
+void sn_program_build(sn_program_t *prog);
 
 sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr);
 
