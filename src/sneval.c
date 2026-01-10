@@ -13,6 +13,7 @@ sn_value_t sn_program_run(sn_program_t *prog)
         prog->global_values[prog->builtin_count - i - 1] = bvalue->value;
         bvalue = bvalue->next;
     }
+    assert(bvalue == NULL);
 
     for (int i = prog->builtin_count; i < prog->global_idxs.count; i++) {
         prog->global_values[i] = sn_null;

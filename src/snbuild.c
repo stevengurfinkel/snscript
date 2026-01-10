@@ -147,7 +147,7 @@ bool sn_program_lookup_symbol(sn_program_t *prog, sn_symbol_t *sym, sn_ref_t *re
 {
     ref_out->scope = SN_SCOPE_GLOBAL;
     ref_out->index = sn_symvec_idx(&prog->global_idxs, sym);
-    return ref_out->index > 0;
+    return ref_out->index >= 0;
 }
 
 void sn_sexpr_link_vars(sn_sexpr_t *expr, sn_rtype_t parent_type)
