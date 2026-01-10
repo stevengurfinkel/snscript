@@ -35,21 +35,6 @@ sn_value_t sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref)
     return sn_null;
 }
 
-bool sn_sexpr_eval_special_form(sn_sexpr_t *expr, sn_value_t *value_out)
-{
-    sn_program_t *prog = expr->prog;
-
-    if (expr->child_count == 0 || expr->child_head->type != SN_SEXPR_TYPE_SYMBOL) {
-        return false;
-    }
-
-    sn_sexpr_t *form = expr->child_head;
-    if (form->sym == prog->sn_let) {
-        
-    }
-    return false;
-}
-
 sn_value_t sn_program_eval_call(sn_program_t *prog, sn_sexpr_t *expr)
 {
     if (expr->child_count == 0) {
