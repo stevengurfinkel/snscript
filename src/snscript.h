@@ -20,6 +20,15 @@ typedef enum sn_value_type_en
     SN_VALUE_TYPE_BUILTIN_FN,
 } sn_value_type_t;
 
+typedef enum sn_error_en
+{
+    SN_SUCCESS = 0,
+    SN_ERROR_END_OF_INPUT,
+    SN_ERROR_EXPECTED_EXPR_CLOSE,
+    SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS,
+    SN_ERROR_GENERIC = 0x7FFFFFFF
+} sn_error_t;
+
 typedef struct sn_program_st sn_program_t;
 typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_sexpr_st sn_sexpr_t;
@@ -30,6 +39,8 @@ typedef bool (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t
 sn_program_t *sn_program_create(const char *source, size_t size);
 void sn_program_destroy(sn_program_t *prog);
 sn_value_t sn_program_run(sn_program_t *prog);
+
+const char *sn_error_str(sn_error_t status);
 
 void sn_value_print(sn_value_t value, FILE *stream);
 

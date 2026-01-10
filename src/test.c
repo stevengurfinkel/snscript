@@ -478,6 +478,24 @@ void test_println(void)
     sn_program_destroy(prog);
 }
 
+void test_parse_error(void)
+{
+    char *src = "(\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_END_OF_INPUT);
+    sn_program_destroy(prog);
+
+    src = "(}\n";
+    prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_EXPECTED_EXPR_CLOSE);
+    sn_program_destroy(prog);
+
+    src = "{a b c d}";
+    prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS);
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -508,6 +526,7 @@ int main(int argc, char **argv)
     test_variable();
     test_null();
     test_println();
+    test_parse_error();
     printf("PASSED\n");
     return 0;
 }

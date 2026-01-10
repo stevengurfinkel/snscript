@@ -73,6 +73,7 @@ struct sn_builtin_value_st
 
 struct sn_program_st
 {
+    sn_error_t status;
     sn_sexpr_t expr;
 
     sn_symbol_t *symbol_head;
@@ -99,6 +100,7 @@ struct sn_program_st
 extern sn_value_t sn_null;
 
 void sn_program_build(sn_program_t *prog);
+sn_error_t sn_program_get_status(sn_program_t *prog);
 
 sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr);
 

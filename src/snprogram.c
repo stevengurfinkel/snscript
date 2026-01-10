@@ -5,6 +5,24 @@
 #include <assert.h>
 
 #include "snprogram.h"
+#define SN_ERROR_CASE(x) case SN_ERROR_ ## x: return "SN_ERROR_" #x
+
+const char *sn_error_str(sn_error_t status)
+{
+    switch (status) {
+        case SN_SUCCESS: return "SN_SUCCESS";
+        SN_ERROR_CASE(END_OF_INPUT);
+        SN_ERROR_CASE(EXPECTED_EXPR_CLOSE);
+        SN_ERROR_CASE(INFIX_EXPR_NOT_3_ELEMENTS);
+        SN_ERROR_CASE(GENERIC);
+    }
+    return NULL;
+}
+
+sn_error_t sn_program_get_status(sn_program_t *prog)
+{
+    return prog->status;
+}
 
 sn_symbol_t *sn_program_add_symbol(sn_program_t *prog, const char *str, size_t size)
 {

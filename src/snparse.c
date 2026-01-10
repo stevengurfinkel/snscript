@@ -87,10 +87,12 @@ bool sn_cur_is_integer(sn_program_t *prog)
 void sn_cur_consume(sn_program_t *prog, char c)
 {
     if (!sn_cur_more(prog)) {
-        fprintf(prog->msg, "Error: expected %c but got end of input\n", c);
+        prog->status = SN_ERROR_END_OF_INPUT;
+        return;
     }
     if (*prog->cur != c) {
-        fprintf(prog->msg, "Error: expected %c but got %c\n", c, *prog->cur);
+        prog->status = SN_ERROR_EXPECTED_EXPR_CLOSE;
+        return;
     }
 
     prog->cur++;
@@ -102,7 +104,7 @@ void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr)
     sn_sexpr_t **child_tail = &expr->child_head;
 
     sn_sexpr_t *child = NULL;
-    while ((child = sn_cur_parse_sexpr(prog)) != NULL) {
+    while (prog->status == SN_SUCCESS && (child = sn_cur_parse_sexpr(prog)) != NULL) {
         *child_tail = child;
         child_tail = &child->next;
         expr->child_count++;
@@ -112,9 +114,7 @@ void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr)
 void sn_program_reorder_infix_expr(sn_program_t *prog, sn_sexpr_t *expr)
 {
     if (expr->child_count != 3) {
-        fprintf(prog->msg,
-                "Error: {} expression needs 3 elments, but has %zd\n",
-                expr->child_count);
+        prog->status = SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS;
         return;
     }
 
