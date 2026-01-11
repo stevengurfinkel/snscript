@@ -120,6 +120,10 @@ bool sn_cur_is_integer(sn_program_t *prog)
 
 void sn_cur_consume(sn_program_t *prog, char c)
 {
+    if (prog->status != SN_SUCCESS) {
+        return;
+    }
+
     if (!sn_cur_more(prog)) {
         prog->status = SN_ERROR_UNEXPECTED_END_OF_INPUT;
         prog->error_pos = prog->cur;

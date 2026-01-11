@@ -26,6 +26,11 @@ int main(int argc, char **argv)
     fclose(f);
 
     sn_program_t *prog = sn_program_create(bytes, size);
+    if (prog->status != SN_SUCCESS) {
+        sn_program_write_error(prog, stderr);
+        exit(-1);
+    }
+
     sn_program_run(prog);
     sn_program_destroy(prog);
     return 0;
