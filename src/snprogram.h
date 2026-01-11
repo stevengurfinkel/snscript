@@ -62,6 +62,7 @@ struct sn_expr_st
 
     sn_ref_t ref;
     sn_program_t *prog;
+    const char *pos;
 };
 
 typedef struct sn_builtin_value_st sn_builtin_value_t;
@@ -74,11 +75,14 @@ struct sn_builtin_value_st
 struct sn_program_st
 {
     sn_error_t status;
+    const char *error_pos;
+
     sn_expr_t expr;
 
     sn_symbol_t *symbol_head;
     sn_symbol_t **symbol_tail;
 
+    const char *start;
     const char *cur;
     const char *last;
 
@@ -117,4 +121,3 @@ void sn_symvec_deinit(sn_symvec_t *symvec);
 bool sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args);
 bool sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args);
 bool sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args);
-

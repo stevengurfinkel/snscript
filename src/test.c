@@ -483,31 +483,39 @@ void test_parse_error(void)
     char *src = "(\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_UNEXPECTED_END_OF_INPUT);
+    sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);
 
     src = ")\n";
     prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT);
+    sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);
 
     src = "(}\n";
     prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_EXPECTED_EXPR_CLOSE);
+    sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);
 
-    src = "{a b c d}";
+    src = "(\n"
+          "(x)\n"
+          "({a b c d}))\n";
     prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS);
+    sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);
 
-    src = "1234x";
+    src = "\n\n1234x";
     prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INVALID_INTEGER_LITERAL);
+    sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);
 
     src = "var'";
     prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INVALID_SYMBOL_NAME);
+    sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);
 }
 

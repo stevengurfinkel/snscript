@@ -27,6 +27,27 @@ sn_error_t sn_program_get_status(sn_program_t *prog)
     return prog->status;
 }
 
+void sn_program_write_error(sn_program_t *prog, FILE *stream)
+{
+    if (prog->error_pos != NULL) {
+        int line = 1;
+        int col = 1;
+
+        for (const char *c = prog->start; c < prog->error_pos; c++) {
+            col++;
+            if (*c == '\n') {
+                line++;
+                col = 1;
+            }
+        }
+
+        fprintf(stream, "%d:%d: ", line, col);
+    }
+    if (prog->status != SN_SUCCESS) {
+        fprintf(stream, "%s\n", sn_error_str(prog->status));
+    }
+}
+
 sn_symbol_t *sn_program_add_symbol(sn_program_t *prog, const char *str, size_t size)
 {
     sn_symbol_t *sym = calloc(1, sizeof *sym + size + 1);
@@ -98,6 +119,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
 sn_program_t *sn_program_create(const char *source, size_t size)
 {
     sn_program_t *prog = calloc(1, sizeof *prog);
+    prog->start = source;
     prog->cur = source;
     prog->last = source + size;
 
