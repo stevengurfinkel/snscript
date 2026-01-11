@@ -11,9 +11,10 @@ const char *sn_error_str(sn_error_t status)
 {
     switch (status) {
         case SN_SUCCESS: return "SN_SUCCESS";
-        SN_ERROR_CASE(END_OF_INPUT);
+        SN_ERROR_CASE(UNEXPECTED_END_OF_INPUT);
         SN_ERROR_CASE(EXPECTED_EXPR_CLOSE);
         SN_ERROR_CASE(INFIX_EXPR_NOT_3_ELEMENTS);
+        SN_ERROR_CASE(EXTRA_CHARS_AT_END_OF_INPUT);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;
@@ -103,9 +104,7 @@ sn_program_t *sn_program_create(const char *source, size_t size)
     sn_program_add_default_symbols(prog);
 
     prog->msg = stderr;
-    prog->expr.prog = prog;
-    prog->expr.rtype = SN_RTYPE_PROGRAM;
-    sn_cur_parse_expr_list(prog, &prog->expr);
+    sn_program_parse(prog);
 
     prog->cur = NULL;
     prog->last = NULL;

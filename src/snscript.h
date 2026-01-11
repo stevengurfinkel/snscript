@@ -23,9 +23,10 @@ typedef enum sn_value_type_en
 typedef enum sn_error_en
 {
     SN_SUCCESS = 0,
-    SN_ERROR_END_OF_INPUT,
+    SN_ERROR_UNEXPECTED_END_OF_INPUT,
     SN_ERROR_EXPECTED_EXPR_CLOSE,
     SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS,
+    SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT,
     SN_ERROR_GENERIC = 0x7FFFFFFF
 } sn_error_t;
 

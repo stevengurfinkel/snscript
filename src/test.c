@@ -482,7 +482,12 @@ void test_parse_error(void)
 {
     char *src = "(\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
-    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_END_OF_INPUT);
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_UNEXPECTED_END_OF_INPUT);
+    sn_program_destroy(prog);
+
+    src = ")\n";
+    prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT);
     sn_program_destroy(prog);
 
     src = "(}\n";

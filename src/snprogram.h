@@ -107,7 +107,7 @@ sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr);
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);
 sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end);
-void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr);
+void sn_program_parse(sn_program_t *prog);
 
 void sn_symvec_init(sn_symvec_t *symvec);
 int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);

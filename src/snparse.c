@@ -87,7 +87,7 @@ bool sn_cur_is_integer(sn_program_t *prog)
 void sn_cur_consume(sn_program_t *prog, char c)
 {
     if (!sn_cur_more(prog)) {
-        prog->status = SN_ERROR_END_OF_INPUT;
+        prog->status = SN_ERROR_UNEXPECTED_END_OF_INPUT;
         return;
     }
     if (*prog->cur != c) {
@@ -108,6 +108,16 @@ void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
         *child_tail = child;
         child_tail = &child->next;
         expr->child_count++;
+    }
+}
+
+void sn_program_parse(sn_program_t *prog)
+{
+    prog->expr.prog = prog;
+    prog->expr.rtype = SN_RTYPE_PROGRAM;
+    sn_cur_parse_expr_list(prog, &prog->expr);
+    if (prog->status == SN_SUCCESS && prog->cur != prog->last) {
+        prog->status = SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT;
     }
 }
 
