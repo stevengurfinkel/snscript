@@ -24,7 +24,7 @@ void test_parse_int(void)
     char *src = "1234";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *first = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *first = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(first->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(first->vint, 1234);
     ASSERT_NULL(first->next);
@@ -37,7 +37,7 @@ void test_parse_leading_whitespace_int(void)
     char *src = "  1234";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *first = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *first = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(first->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(first->vint, 1234);
     ASSERT_NULL(first->next);
@@ -50,7 +50,7 @@ void test_parse_negative_int(void)
     char *src = "-1234";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *first = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *first = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(first->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(first->vint, -1234);
     ASSERT_NULL(first->next);
@@ -63,7 +63,7 @@ void test_parse_single_digit(void)
     char *src = "4";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *first = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *first = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(first->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(first->vint, 4);
     ASSERT_NULL(first->next);
@@ -76,7 +76,7 @@ void test_parse_single_negative_digit(void)
     char *src = "-4";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *first = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *first = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(first->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(first->vint, -4);
     ASSERT_NULL(first->next);
@@ -89,7 +89,7 @@ void test_parse_two_integers(void)
     char *src = "123 456";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->vint, 123);
 
@@ -106,7 +106,7 @@ void test_parse_empty_list(void)
     char *src = "()";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_NULL(expr->child_head);
     ASSERT_NULL(expr->next);
@@ -119,7 +119,7 @@ void test_parse_empty_list_with_spaces(void)
     char *src = "  (  )  ";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_NULL(expr->child_head);
     ASSERT_NULL(expr->next);
@@ -132,7 +132,7 @@ void test_parse_nested_empty_list(void)
     char *src = "(())";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_NULL(expr->child_head->child_head);
@@ -146,7 +146,7 @@ void test_parse_list_of_integers(void)
     char *src = "(1 2 3 4)";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
@@ -165,7 +165,7 @@ void test_parse_list_of_integers_with_spaces(void)
     char *src = " ( 1   2    3     4  )   ";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
@@ -184,7 +184,7 @@ void test_parse_list_of_some_negative_integers(void)
     char *src = "(-1 2 -3 4)";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, -1);
@@ -203,7 +203,7 @@ void test_parse_multiple_lists(void)
     char *src = "(1 (2) 3) ()";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
@@ -229,7 +229,7 @@ void test_parse_with_comments(void)
                 "3) ();; end of file";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
@@ -253,7 +253,7 @@ void test_parse_curlys(void)
     char *src = "{2 1 3}";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_EQ(expr->child_head->type, SN_SEXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
@@ -270,7 +270,7 @@ void test_parse_symbol(void)
     char *src = "hello";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->sym, src));
     ASSERT_NULL(expr->next);
@@ -283,7 +283,7 @@ void test_parse_two_symbols(void)
     char *src = "hello world";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->sym, "hello"));
 
@@ -299,7 +299,7 @@ void test_parse_fancy_symbols(void)
     char *src = "hello? <";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->sym, "hello?"));
 
@@ -315,7 +315,7 @@ void test_parse_repeat_symbols(void)
     char *src = "hello? hello?";
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->sym, "hello?"));
 
@@ -330,7 +330,7 @@ void test_parse_list_and_symbols(void)
 {
     char *src = "(if {a > 0} a (- a))";
     sn_program_t *prog = sn_program_create(src, strlen(src));
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_NULL(expr->next);
 
@@ -373,7 +373,7 @@ void test_parse_list_symbols_comments(void)
                 "  a ;; if so, return a\n"
                 "  (- a)) ;; otherwise, negate a\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
-    sn_sexpr_t *expr = sn_program_test_get_first_sexpr(prog);
+    sn_expr_t *expr = sn_program_test_get_first_expr(prog);
     ASSERT_EQ(expr->type, SN_SEXPR_TYPE_SEXPR);
     ASSERT_NULL(expr->next);
 

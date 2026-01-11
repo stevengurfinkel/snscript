@@ -4,9 +4,9 @@
 
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
 
-void sn_sexpr_set_rtype(sn_sexpr_t *expr);
+void sn_expr_set_rtype(sn_expr_t *expr);
 
-void sn_symbol_set_rtype(sn_sexpr_t *expr)
+void sn_symbol_set_rtype(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
     sn_symbol_t *sym = expr->sym;
@@ -25,7 +25,7 @@ void sn_symbol_set_rtype(sn_sexpr_t *expr)
     }
 }
 
-void sn_let_expr_check(sn_sexpr_t *expr)
+void sn_let_expr_check(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
     if (expr->child_count != 3) {
@@ -39,7 +39,7 @@ void sn_let_expr_check(sn_sexpr_t *expr)
     }
 }
 
-void sn_fn_expr_check(sn_sexpr_t *expr)
+void sn_fn_expr_check(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
     if (expr->child_count < 3) {
@@ -47,13 +47,13 @@ void sn_fn_expr_check(sn_sexpr_t *expr)
         abort();
     }
 
-    sn_sexpr_t *proto = expr->child_head->next;
+    sn_expr_t *proto = expr->child_head->next;
     if (proto->rtype != SN_RTYPE_CALL) {
         fprintf(prog->msg, "Error: fn prototype must be a list\n");
         abort();
     }
 
-    for (sn_sexpr_t *var = proto->child_head; var != NULL; var = var->next) {
+    for (sn_expr_t *var = proto->child_head; var != NULL; var = var->next) {
         if (var->rtype != SN_RTYPE_VAR) {
             fprintf(prog->msg, "Error: fn prototype must contain only variable names\n");
             abort();
@@ -61,7 +61,7 @@ void sn_fn_expr_check(sn_sexpr_t *expr)
     }
 }
 
-void sn_if_expr_check(sn_sexpr_t *expr)
+void sn_if_expr_check(sn_expr_t *expr)
 {
     if (expr->child_count != 3 && expr->child_count != 4) {
         fprintf(expr->prog->msg, "Error: if statement must have 3 or 4 elements\n");
@@ -69,12 +69,12 @@ void sn_if_expr_check(sn_sexpr_t *expr)
     }
 }
 
-void sn_list_set_rtype(sn_sexpr_t *expr)
+void sn_list_set_rtype(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
 
-    for (sn_sexpr_t *child = expr->child_head; child != NULL; child = child->next) {
-        sn_sexpr_set_rtype(child);
+    for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
+        sn_expr_set_rtype(child);
     }
 
     if (expr->rtype == SN_RTYPE_PROGRAM) {
@@ -113,7 +113,7 @@ void sn_list_set_rtype(sn_sexpr_t *expr)
             break;
     }
 
-    for (sn_sexpr_t *child = expr->child_head; child != NULL; child = child->next) {
+    for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
         if (child->rtype == SN_RTYPE_FN_EXPR) {
             fprintf(prog->msg, "Error: functions must be defined at the top level\n");
             abort();
@@ -125,7 +125,7 @@ void sn_list_set_rtype(sn_sexpr_t *expr)
     }
 }
 
-void sn_sexpr_set_rtype(sn_sexpr_t *expr)
+void sn_expr_set_rtype(sn_expr_t *expr)
 {
     switch (expr->type) {
         case SN_SEXPR_TYPE_INVALID:
@@ -150,14 +150,14 @@ bool sn_program_lookup_symbol(sn_program_t *prog, sn_symbol_t *sym, sn_ref_t *re
     return ref_out->index >= 0;
 }
 
-void sn_sexpr_link_vars(sn_sexpr_t *expr, sn_rtype_t parent_type)
+void sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
 {
     sn_program_t *prog = expr->prog;
 
     if (expr->rtype == SN_RTYPE_LET_EXPR) {
         assert(expr->child_head->rtype == SN_RTYPE_LET_KEYW);
 
-        sn_sexpr_t *name = expr->child_head->next;
+        sn_expr_t *name = expr->child_head->next;
 
         name->ref.scope = SN_SCOPE_GLOBAL;
         name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
@@ -174,13 +174,13 @@ void sn_sexpr_link_vars(sn_sexpr_t *expr, sn_rtype_t parent_type)
         }
     }
 
-    for (sn_sexpr_t *child = expr->child_head; child != NULL; child = child->next) {
-        sn_sexpr_link_vars(child, expr->rtype);
+    for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
+        sn_expr_link_vars(child, expr->rtype);
     }
 }
 
 void sn_program_build(sn_program_t *prog)
 {
-    sn_sexpr_set_rtype(&prog->expr);
-    sn_sexpr_link_vars(&prog->expr, SN_RTYPE_INVALID);
+    sn_expr_set_rtype(&prog->expr);
+    sn_expr_link_vars(&prog->expr, SN_RTYPE_INVALID);
 }

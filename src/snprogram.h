@@ -50,15 +50,15 @@ typedef struct sn_ref_st
     int index;
 } sn_ref_t;
 
-struct sn_sexpr_st
+struct sn_expr_st
 {
-    sn_sexpr_type_t type;
+    sn_expr_type_t type;
     sn_rtype_t rtype;
     int64_t vint;
     sn_symbol_t *sym;
     size_t child_count;
-    sn_sexpr_t *child_head;
-    sn_sexpr_t *next;
+    sn_expr_t *child_head;
+    sn_expr_t *next;
 
     sn_ref_t ref;
     sn_program_t *prog;
@@ -74,7 +74,7 @@ struct sn_builtin_value_st
 struct sn_program_st
 {
     sn_error_t status;
-    sn_sexpr_t expr;
+    sn_expr_t expr;
 
     sn_symbol_t *symbol_head;
     sn_symbol_t **symbol_tail;
@@ -102,12 +102,12 @@ extern sn_value_t sn_null;
 void sn_program_build(sn_program_t *prog);
 sn_error_t sn_program_get_status(sn_program_t *prog);
 
-sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr);
+sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr);
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
-sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog);
+sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);
 sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end);
-void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr);
+void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr);
 
 void sn_symvec_init(sn_symvec_t *symvec);
 int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);

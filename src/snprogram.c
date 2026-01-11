@@ -105,7 +105,7 @@ sn_program_t *sn_program_create(const char *source, size_t size)
     prog->msg = stderr;
     prog->expr.prog = prog;
     prog->expr.rtype = SN_RTYPE_PROGRAM;
-    sn_cur_parse_sexpr_list(prog, &prog->expr);
+    sn_cur_parse_expr_list(prog, &prog->expr);
 
     prog->cur = NULL;
     prog->last = NULL;

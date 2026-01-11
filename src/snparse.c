@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "snprogram.h"
 
-sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog);
+sn_expr_t *sn_cur_parse_expr(sn_program_t *prog);
 
 bool sn_cur_more(sn_program_t *prog)
 {
@@ -98,29 +98,29 @@ void sn_cur_consume(sn_program_t *prog, char c)
     prog->cur++;
 }
 
-void sn_cur_parse_sexpr_list(sn_program_t *prog, sn_sexpr_t *expr)
+void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
 {
     expr->type = SN_SEXPR_TYPE_SEXPR;
-    sn_sexpr_t **child_tail = &expr->child_head;
+    sn_expr_t **child_tail = &expr->child_head;
 
-    sn_sexpr_t *child = NULL;
-    while (prog->status == SN_SUCCESS && (child = sn_cur_parse_sexpr(prog)) != NULL) {
+    sn_expr_t *child = NULL;
+    while (prog->status == SN_SUCCESS && (child = sn_cur_parse_expr(prog)) != NULL) {
         *child_tail = child;
         child_tail = &child->next;
         expr->child_count++;
     }
 }
 
-void sn_program_reorder_infix_expr(sn_program_t *prog, sn_sexpr_t *expr)
+void sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
 {
     if (expr->child_count != 3) {
         prog->status = SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS;
         return;
     }
 
-    sn_sexpr_t *exprs[3] = {expr->child_head,
-                            expr->child_head->next,
-                            expr->child_head->next->next};
+    sn_expr_t *exprs[3] = {expr->child_head,
+                           expr->child_head->next,
+                           expr->child_head->next->next};
 
     expr->child_head = exprs[1];
     expr->child_head->next = exprs[0];
@@ -134,14 +134,14 @@ bool sn_cur_is_expr_end(sn_program_t *prog)
            *prog->cur == '}';
 }
 
-sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
+sn_expr_t *sn_cur_parse_expr(sn_program_t *prog)
 {
     sn_cur_skip_whitespace(prog);
     if (sn_cur_is_expr_end(prog)) {
         return NULL;
     }
 
-    sn_sexpr_t *expr = calloc(1, sizeof *expr);
+    sn_expr_t *expr = calloc(1, sizeof *expr);
     expr->prog = prog;
 
     if (sn_cur_is_integer(prog)) {
@@ -150,12 +150,12 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
     }
     else if (*prog->cur == '(') {
         sn_cur_consume(prog, '(');
-        sn_cur_parse_sexpr_list(prog, expr);
+        sn_cur_parse_expr_list(prog, expr);
         sn_cur_consume(prog, ')');
     }
     else if (*prog->cur == '{') {
         sn_cur_consume(prog, '{');
-        sn_cur_parse_sexpr_list(prog, expr);
+        sn_cur_parse_expr_list(prog, expr);
         sn_cur_consume(prog, '}');
         sn_program_reorder_infix_expr(prog, expr);
     }
@@ -166,7 +166,7 @@ sn_sexpr_t *sn_cur_parse_sexpr(sn_program_t *prog)
     return expr;
 }
 
-sn_sexpr_t *sn_program_test_get_first_sexpr(sn_program_t *prog)
+sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog)
 {
     return prog->expr.child_head;
 }

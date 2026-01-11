@@ -20,7 +20,7 @@ sn_value_t sn_program_run(sn_program_t *prog)
     }
 
     sn_value_t value = sn_null;
-    for (sn_sexpr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
+    for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
         value = sn_program_eval_expr(prog, expr);
     }
     return value;
@@ -35,7 +35,7 @@ sn_value_t sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref)
     return sn_null;
 }
 
-sn_value_t sn_program_eval_call(sn_program_t *prog, sn_sexpr_t *expr)
+sn_value_t sn_program_eval_call(sn_program_t *prog, sn_expr_t *expr)
 {
     if (expr->child_count == 0) {
         fprintf(prog->msg, "Error: empty function call\n");
@@ -43,7 +43,7 @@ sn_value_t sn_program_eval_call(sn_program_t *prog, sn_sexpr_t *expr)
     }
 
     sn_value_t *values = alloca(expr->child_count * sizeof values[0]);
-    sn_sexpr_t *child = expr->child_head;
+    sn_expr_t *child = expr->child_head;
     for (int i = 0; i < expr->child_count; i++) {
         values[i] = sn_program_eval_expr(prog, child);
         child = child->next;
@@ -63,12 +63,12 @@ sn_value_t sn_program_eval_call(sn_program_t *prog, sn_sexpr_t *expr)
     return ret;
 }
 
-sn_value_t sn_expr_eval_let(sn_sexpr_t *expr)
+sn_value_t sn_expr_eval_let(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
-    sn_sexpr_t *kw = expr->child_head;
-    sn_sexpr_t *var = kw->next;
-    sn_sexpr_t *value = var->next;
+    sn_expr_t *kw = expr->child_head;
+    sn_expr_t *var = kw->next;
+    sn_expr_t *value = var->next;
 
     assert(kw->rtype == SN_RTYPE_LET_KEYW);
     assert(var->rtype == SN_RTYPE_VAR);
@@ -78,7 +78,7 @@ sn_value_t sn_expr_eval_let(sn_sexpr_t *expr)
     return sn_null;
 }
 
-sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_sexpr_t *expr)
+sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr)
 {
     switch (expr->rtype) {
         case SN_SEXPR_TYPE_INVALID:

@@ -3,13 +3,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-typedef enum sn_sexpr_type_en
+typedef enum sn_expr_type_en
 {
     SN_SEXPR_TYPE_INVALID = 0,
     SN_SEXPR_TYPE_INTEGER,
     SN_SEXPR_TYPE_SYMBOL,
     SN_SEXPR_TYPE_SEXPR,
-} sn_sexpr_type_t;
+} sn_expr_type_t;
 
 typedef enum sn_value_type_en
 {
@@ -31,7 +31,7 @@ typedef enum sn_error_en
 
 typedef struct sn_program_st sn_program_t;
 typedef struct sn_symbol_st sn_symbol_t;
-typedef struct sn_sexpr_st sn_sexpr_t;
+typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_value_st sn_value_t;
 typedef struct sn_user_fn_st sn_user_fn_t;
 typedef bool (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
