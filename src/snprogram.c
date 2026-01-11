@@ -15,6 +15,8 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(EXPECTED_EXPR_CLOSE);
         SN_ERROR_CASE(INFIX_EXPR_NOT_3_ELEMENTS);
         SN_ERROR_CASE(EXTRA_CHARS_AT_END_OF_INPUT);
+        SN_ERROR_CASE(INVALID_INTEGER_LITERAL);
+        SN_ERROR_CASE(INVALID_SYMBOL_NAME);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;

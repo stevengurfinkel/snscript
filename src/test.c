@@ -499,6 +499,16 @@ void test_parse_error(void)
     prog = sn_program_create(src, strlen(src));
     ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS);
     sn_program_destroy(prog);
+
+    src = "1234x";
+    prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INVALID_INTEGER_LITERAL);
+    sn_program_destroy(prog);
+
+    src = "var'";
+    prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_ERROR_INVALID_SYMBOL_NAME);
+    sn_program_destroy(prog);
 }
 
 int main(int argc, char **argv)

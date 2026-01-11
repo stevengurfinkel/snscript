@@ -15,9 +15,33 @@ bool sn_cur_two_more(sn_program_t *prog)
     return prog->cur + 1 < prog->last;
 }
 
+bool sn_cur_is_expr_end(sn_program_t *prog)
+{
+    return !sn_cur_more(prog) ||
+           *prog->cur == ')' ||
+           *prog->cur == '}';
+}
+
+bool sn_cur_is_whitespace(sn_program_t *prog)
+{
+    return sn_cur_more(prog) && isspace(*prog->cur);
+}
+
+bool sn_cur_is_comment_start(sn_program_t *prog)
+{
+    return sn_cur_two_more(prog) && prog->cur[0] == ';' && prog->cur[1] == ';';
+}
+
+bool sn_cur_is_end_of_token(sn_program_t *prog)
+{
+    return sn_cur_is_expr_end(prog) ||
+           sn_cur_is_comment_start(prog) ||
+           sn_cur_is_whitespace(prog);
+}
+
 bool sn_cur_did_skip_comment(sn_program_t *prog)
 {
-    if (sn_cur_two_more(prog) && prog->cur[0] == ';' && prog->cur[1] == ';') {
+    if (sn_cur_is_comment_start(prog)) {
         while (sn_cur_more(prog) && *prog->cur != '\n') {
             prog->cur++;
         }
@@ -30,7 +54,7 @@ bool sn_cur_did_skip_comment(sn_program_t *prog)
 bool sn_cur_did_skip_whitespace(sn_program_t *prog)
 {
     bool did_skip = false;
-    while (sn_cur_more(prog) && isspace(*prog->cur)) {
+    while (sn_cur_is_whitespace(prog)) {
         prog->cur++;
         did_skip = true;
     }
@@ -45,7 +69,7 @@ void sn_cur_skip_whitespace(sn_program_t *prog)
 
 bool sn_cur_is_symbol(sn_program_t *prog)
 {
-    const char *ok = "!@$%^&*-_=+[]:<>./?";
+    const char *ok = "!@$%^&*-_=+:<>./?";
     return sn_cur_more(prog) &&
            (isalnum(*prog->cur) || strchr(ok, *prog->cur) != NULL);
 }
@@ -65,6 +89,10 @@ int64_t sn_cur_parse_integer(sn_program_t *prog)
         prog->cur++;
     }
 
+    if (!sn_cur_is_end_of_token(prog)) {
+        prog->status = SN_ERROR_INVALID_INTEGER_LITERAL;
+    }
+
     return sign * value;
 }
 
@@ -73,6 +101,10 @@ sn_symbol_t *sn_cur_parse_symbol(sn_program_t *prog)
     const char *start = prog->cur;
     while (sn_cur_is_symbol(prog)) {
         prog->cur++;
+    }
+
+    if (!sn_cur_is_end_of_token(prog)) {
+        prog->status = SN_ERROR_INVALID_SYMBOL_NAME;
     }
 
     return sn_program_get_symbol(prog, start, prog->cur);
@@ -135,13 +167,6 @@ void sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
     expr->child_head = exprs[1];
     expr->child_head->next = exprs[0];
     expr->child_head->next->next = exprs[2];
-}
-
-bool sn_cur_is_expr_end(sn_program_t *prog)
-{
-    return !sn_cur_more(prog) ||
-           *prog->cur == ')' ||
-           *prog->cur == '}';
 }
 
 sn_expr_t *sn_cur_parse_expr(sn_program_t *prog)
