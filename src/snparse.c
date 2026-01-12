@@ -140,7 +140,7 @@ void sn_cur_consume(sn_program_t *prog, char c)
 
 void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
 {
-    expr->type = SN_SEXPR_TYPE_SEXPR;
+    expr->type = SN_EXPR_TYPE_SEXPR;
     sn_expr_t **child_tail = &expr->child_head;
 
     sn_expr_t *child = NULL;
@@ -191,7 +191,7 @@ sn_expr_t *sn_cur_parse_expr(sn_program_t *prog)
     expr->pos = prog->cur;
 
     if (sn_cur_is_integer(prog)) {
-        expr->type = SN_SEXPR_TYPE_INTEGER;
+        expr->type = SN_EXPR_TYPE_INTEGER;
         expr->vint = sn_cur_parse_integer(prog);
     }
     else if (*prog->cur == '(') {
@@ -206,7 +206,7 @@ sn_expr_t *sn_cur_parse_expr(sn_program_t *prog)
         sn_program_reorder_infix_expr(prog, expr);
     }
     else {
-        expr->type = SN_SEXPR_TYPE_SYMBOL;
+        expr->type = SN_EXPR_TYPE_SYMBOL;
         expr->sym = sn_cur_parse_symbol(prog);
     }
     return expr;

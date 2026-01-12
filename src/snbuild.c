@@ -128,16 +128,16 @@ void sn_list_set_rtype(sn_expr_t *expr)
 void sn_expr_set_rtype(sn_expr_t *expr)
 {
     switch (expr->type) {
-        case SN_SEXPR_TYPE_INVALID:
+        case SN_EXPR_TYPE_INVALID:
             abort();
             break;
-        case SN_SEXPR_TYPE_INTEGER:
+        case SN_EXPR_TYPE_INTEGER:
             expr->rtype = SN_RTYPE_LITERAL;
             break;
-        case SN_SEXPR_TYPE_SYMBOL:
+        case SN_EXPR_TYPE_SYMBOL:
             sn_symbol_set_rtype(expr);
             break;
-        case SN_SEXPR_TYPE_SEXPR:
+        case SN_EXPR_TYPE_SEXPR:
             sn_list_set_rtype(expr);
             break;
     }

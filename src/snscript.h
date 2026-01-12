@@ -5,10 +5,10 @@
 
 typedef enum sn_expr_type_en
 {
-    SN_SEXPR_TYPE_INVALID = 0,
-    SN_SEXPR_TYPE_INTEGER,
-    SN_SEXPR_TYPE_SYMBOL,
-    SN_SEXPR_TYPE_SEXPR,
+    SN_EXPR_TYPE_INVALID = 0,
+    SN_EXPR_TYPE_INTEGER,
+    SN_EXPR_TYPE_SYMBOL,
+    SN_EXPR_TYPE_SEXPR,
 } sn_expr_type_t;
 
 typedef enum sn_value_type_en

@@ -81,7 +81,7 @@ sn_value_t sn_expr_eval_let(sn_expr_t *expr)
 sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr)
 {
     switch (expr->rtype) {
-        case SN_SEXPR_TYPE_INVALID:
+        case SN_EXPR_TYPE_INVALID:
             abort();
             return sn_null;
         case SN_RTYPE_LITERAL:
