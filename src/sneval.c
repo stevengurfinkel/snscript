@@ -4,7 +4,9 @@
 
 sn_value_t sn_program_run(sn_program_t *prog)
 {
-    sn_program_build(prog);
+    if (sn_program_build(prog) != SN_SUCCESS) {
+        return sn_null;
+    }
 
     prog->global_values = alloca(prog->global_idxs.count * sizeof prog->global_values[0]);
 
