@@ -17,9 +17,35 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(EXTRA_CHARS_AT_END_OF_INPUT);
         SN_ERROR_CASE(INVALID_INTEGER_LITERAL);
         SN_ERROR_CASE(INVALID_SYMBOL_NAME);
+        SN_ERROR_CASE(LET_EXPR_NOT_3_ITEMS);
+        SN_ERROR_CASE(LET_EXPR_BAD_DEST);
+        SN_ERROR_CASE(FN_EXPR_TOO_SHORT);
+        SN_ERROR_CASE(FN_PROTO_NOT_LIST);
+        SN_ERROR_CASE(FN_PROTO_COTAINS_NON_SYMBOLS);
+        SN_ERROR_CASE(IF_EXPR_INVALID_LENGTH);
+        SN_ERROR_CASE(EMPTY_EXPR);
+        SN_ERROR_CASE(NESTED_FN_EXPR);
+        SN_ERROR_CASE(NESTED_LET_EXPR);
+        SN_ERROR_CASE(UNDECLARED);
+        SN_ERROR_CASE(REDECLARED);
+        SN_ERROR_CASE(CALLEE_NOT_A_FN);
+        SN_ERROR_CASE(INVALID_PARAMS_TO_FN);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;
+}
+
+sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error)
+{
+    assert(error != SN_SUCCESS);
+
+    sn_program_t *prog = expr->prog;
+    prog->status = error;
+    prog->error_pos = expr->pos;
+    if (expr->type == SN_EXPR_TYPE_SYMBOL) {
+        prog->error_sym = expr->sym;
+    }
+    return error;
 }
 
 sn_error_t sn_program_get_status(sn_program_t *prog)
@@ -44,7 +70,10 @@ void sn_program_write_error(sn_program_t *prog, FILE *stream)
         fprintf(stream, "%d:%d: ", line, col);
     }
     if (prog->status != SN_SUCCESS) {
-        fprintf(stream, "%s\n", sn_error_str(prog->status));
+        fprintf(stream,
+                "%s %s\n",
+                sn_error_str(prog->status),
+                prog->error_sym == NULL ? "" : prog->error_sym->value);
     }
 }
 

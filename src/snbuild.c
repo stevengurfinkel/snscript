@@ -4,9 +4,9 @@
 
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
 
-void sn_expr_set_rtype(sn_expr_t *expr);
+sn_error_t sn_expr_set_rtype(sn_expr_t *expr);
 
-void sn_symbol_set_rtype(sn_expr_t *expr)
+sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
     sn_symbol_t *sym = expr->sym;
@@ -23,53 +23,53 @@ void sn_symbol_set_rtype(sn_expr_t *expr)
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
+
+    return SN_SUCCESS;
 }
 
-void sn_let_expr_check(sn_expr_t *expr)
+sn_error_t sn_let_expr_check(sn_expr_t *expr)
 {
-    sn_program_t *prog = expr->prog;
     if (expr->child_count != 3) {
-        fprintf(prog->msg, "Error: let expression must have 3 items\n");
-        abort();
+        return sn_expr_error(expr, SN_ERROR_LET_EXPR_NOT_3_ITEMS);
     }
 
     if (expr->child_head->next->rtype != SN_RTYPE_VAR) {
-        fprintf(prog->msg, "Error: let expression must assign to a variable name\n");
-        abort();
+        return sn_expr_error(expr, SN_ERROR_LET_EXPR_BAD_DEST);
     }
+
+    return SN_SUCCESS;
 }
 
-void sn_fn_expr_check(sn_expr_t *expr)
+sn_error_t sn_fn_expr_check(sn_expr_t *expr)
 {
-    sn_program_t *prog = expr->prog;
     if (expr->child_count < 3) {
-        fprintf(prog->msg, "Error: fn expression must have at least 3 items\n");
-        abort();
+        return sn_expr_error(expr, SN_ERROR_FN_EXPR_TOO_SHORT);
     }
 
     sn_expr_t *proto = expr->child_head->next;
     if (proto->rtype != SN_RTYPE_CALL) {
-        fprintf(prog->msg, "Error: fn prototype must be a list\n");
-        abort();
+        return sn_expr_error(expr, SN_ERROR_FN_PROTO_NOT_LIST);
     }
 
     for (sn_expr_t *var = proto->child_head; var != NULL; var = var->next) {
         if (var->rtype != SN_RTYPE_VAR) {
-            fprintf(prog->msg, "Error: fn prototype must contain only variable names\n");
-            abort();
+            return sn_expr_error(expr, SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS);
         }
     }
+
+    return SN_SUCCESS;
 }
 
-void sn_if_expr_check(sn_expr_t *expr)
+sn_error_t sn_if_expr_check(sn_expr_t *expr)
 {
     if (expr->child_count != 3 && expr->child_count != 4) {
-        fprintf(expr->prog->msg, "Error: if statement must have 3 or 4 elements\n");
-        abort();
+        return sn_expr_error(expr, SN_ERROR_IF_EXPR_INVALID_LENGTH);
     }
+
+    return SN_SUCCESS;
 }
 
-void sn_list_set_rtype(sn_expr_t *expr)
+sn_error_t sn_list_set_rtype(sn_expr_t *expr)
 {
     sn_program_t *prog = expr->prog;
 
@@ -78,13 +78,15 @@ void sn_list_set_rtype(sn_expr_t *expr)
     }
 
     if (expr->rtype == SN_RTYPE_PROGRAM) {
-        return;
+        return SN_SUCCESS;
     }
 
     if (expr->child_count == 0) {
         fprintf(prog->msg, "Error: empty list\n");
         abort();
     }
+
+    sn_error_t status = SN_SUCCESS;
 
     switch (expr->child_head->rtype) {
         case SN_RTYPE_PROGRAM:
@@ -93,15 +95,24 @@ void sn_list_set_rtype(sn_expr_t *expr)
             break;
         case SN_RTYPE_LET_KEYW:
             expr->rtype = SN_RTYPE_LET_EXPR;
-            sn_let_expr_check(expr);
+            status = sn_let_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
             break;
         case SN_RTYPE_FN_KEYW:
             expr->rtype = SN_RTYPE_FN_EXPR;
-            sn_fn_expr_check(expr);
+            status = sn_fn_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
             break;
         case SN_RTYPE_IF_KEYW:
             expr->rtype = SN_RTYPE_IF_EXPR;
-            sn_if_expr_check(expr);
+            status = sn_if_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
             break;
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
@@ -115,32 +126,31 @@ void sn_list_set_rtype(sn_expr_t *expr)
 
     for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
         if (child->rtype == SN_RTYPE_FN_EXPR) {
-            fprintf(prog->msg, "Error: functions must be defined at the top level\n");
-            abort();
+            return sn_expr_error(child, SN_ERROR_NESTED_FN_EXPR);
         }
         else if (child->rtype == SN_RTYPE_LET_EXPR && expr->rtype != SN_RTYPE_FN_EXPR) {
-            fprintf(prog->msg, "Error: let cannot be nested in a non-function\n");
-            abort();
+            return sn_expr_error(child, SN_ERROR_NESTED_LET_EXPR);
         }
     }
+
+    return SN_SUCCESS;
 }
 
-void sn_expr_set_rtype(sn_expr_t *expr)
+sn_error_t sn_expr_set_rtype(sn_expr_t *expr)
 {
     switch (expr->type) {
         case SN_EXPR_TYPE_INVALID:
             abort();
-            break;
+            return SN_ERROR_GENERIC;
         case SN_EXPR_TYPE_INTEGER:
             expr->rtype = SN_RTYPE_LITERAL;
-            break;
+            return SN_SUCCESS;
         case SN_EXPR_TYPE_SYMBOL:
-            sn_symbol_set_rtype(expr);
-            break;
+            return sn_symbol_set_rtype(expr);
         case SN_EXPR_TYPE_SEXPR:
-            sn_list_set_rtype(expr);
-            break;
+            return sn_list_set_rtype(expr);
     }
+    return SN_ERROR_GENERIC;
 }
 
 bool sn_program_lookup_symbol(sn_program_t *prog, sn_symbol_t *sym, sn_ref_t *ref_out)
@@ -150,7 +160,7 @@ bool sn_program_lookup_symbol(sn_program_t *prog, sn_symbol_t *sym, sn_ref_t *re
     return ref_out->index >= 0;
 }
 
-void sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
+sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
 {
     sn_program_t *prog = expr->prog;
 
@@ -162,25 +172,31 @@ void sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
         name->ref.scope = SN_SCOPE_GLOBAL;
         name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
         if (name->ref.index < 0) {
-            fprintf(prog->msg, "Error: %s redeclared\n", name->sym->value);
-            abort();
+            return sn_expr_error(name, SN_ERROR_REDECLARED);
         }
     }
 
     if (expr->rtype == SN_RTYPE_VAR) {
         if (!sn_program_lookup_symbol(prog, expr->sym, &expr->ref)) {
-            fprintf(prog->msg, "Error: %s is undeclared\n", expr->sym->value);
-            abort();
+            return sn_expr_error(expr, SN_ERROR_UNDECLARED);
         }
     }
 
     for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
-        sn_expr_link_vars(child, expr->rtype);
+        sn_error_t status = sn_expr_link_vars(child, expr->rtype);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
     }
+
+    return SN_SUCCESS;
 }
 
-void sn_program_build(sn_program_t *prog)
+sn_error_t sn_program_build(sn_program_t *prog)
 {
-    sn_expr_set_rtype(&prog->expr);
-    sn_expr_link_vars(&prog->expr, SN_RTYPE_INVALID);
+    sn_error_t status = sn_expr_set_rtype(&prog->expr);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+    return sn_expr_link_vars(&prog->expr, SN_RTYPE_INVALID);
 }

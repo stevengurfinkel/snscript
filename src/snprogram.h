@@ -76,6 +76,7 @@ struct sn_program_st
 {
     sn_error_t status;
     const char *error_pos;
+    sn_symbol_t *error_sym;
 
     sn_expr_t expr;
 
@@ -103,10 +104,12 @@ struct sn_program_st
 
 extern sn_value_t sn_null;
 
-void sn_program_build(sn_program_t *prog);
+sn_error_t sn_program_build(sn_program_t *prog);
+sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error);
 sn_error_t sn_program_get_status(sn_program_t *prog);
 
 sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr);
+
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);
