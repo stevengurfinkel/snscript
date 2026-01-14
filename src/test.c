@@ -519,6 +519,17 @@ void test_parse_error(void)
     sn_program_destroy(prog);
 }
 
+void test_build_error(void)
+{
+    char *src = "(let a 1)\n"
+                "  (let b a a)\n";
+    sn_program_t *prog = sn_program_create(src, strlen(src));
+    ASSERT_EQ(sn_program_get_status(prog), SN_SUCCESS);
+    ASSERT_EQ(sn_program_build(prog), SN_ERROR_LET_EXPR_NOT_3_ITEMS);
+    sn_program_write_error(prog, stderr);
+    sn_program_destroy(prog);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -550,6 +561,7 @@ int main(int argc, char **argv)
     test_null();
     test_println();
     test_parse_error();
+    test_build_error();
     printf("PASSED\n");
     return 0;
 }

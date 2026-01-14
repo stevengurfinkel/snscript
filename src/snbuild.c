@@ -71,10 +71,13 @@ sn_error_t sn_if_expr_check(sn_expr_t *expr)
 
 sn_error_t sn_list_set_rtype(sn_expr_t *expr)
 {
-    sn_program_t *prog = expr->prog;
+    sn_error_t status = SN_SUCCESS;
 
     for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
-        sn_expr_set_rtype(child);
+        status = sn_expr_set_rtype(child);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
     }
 
     if (expr->rtype == SN_RTYPE_PROGRAM) {
@@ -82,11 +85,8 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
     }
 
     if (expr->child_count == 0) {
-        fprintf(prog->msg, "Error: empty list\n");
-        abort();
+        return sn_expr_error(expr, SN_ERROR_EMPTY_EXPR);
     }
-
-    sn_error_t status = SN_SUCCESS;
 
     switch (expr->child_head->rtype) {
         case SN_RTYPE_PROGRAM:
