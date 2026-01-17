@@ -145,6 +145,13 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     sn_program_add_builtin_fn(prog, "println", sn_println);
 }
 
+sn_error_t sn_program_create2(sn_program_t **program_out, const char *source, size_t size)
+{
+    sn_program_t *prog = sn_program_create(source, size);
+    *program_out = prog;
+    return prog->status;
+}
+
 sn_program_t *sn_program_create(const char *source, size_t size)
 {
     sn_program_t *prog = calloc(1, sizeof *prog);

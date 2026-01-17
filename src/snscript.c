@@ -12,11 +12,11 @@ int main(int argc, char **argv)
     FILE *f = fopen(argv[1], "rb");
     assert(f);
 
-    int status = fseek(f, 0, SEEK_END);
-    assert(status == 0);
+    int ret = fseek(f, 0, SEEK_END);
+    assert(ret == 0);
     long size = ftell(f);
-    status = fseek(f, 0, SEEK_SET);
-    assert(status == 0);
+    ret = fseek(f, 0, SEEK_SET);
+    assert(ret == 0);
 
     char *bytes = malloc(size);
 
@@ -25,8 +25,9 @@ int main(int argc, char **argv)
 
     fclose(f);
 
-    sn_program_t *prog = sn_program_create(bytes, size);
-    if (prog->status != SN_SUCCESS) {
+    sn_program_t *prog = NULL;
+    sn_error_t status = sn_program_create2(&prog, bytes, size);
+    if (status != SN_SUCCESS) {
         sn_program_write_error(prog, stderr);
         exit(-1);
     }
