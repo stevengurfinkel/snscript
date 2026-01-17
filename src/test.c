@@ -107,7 +107,7 @@ void test_parse_empty_list(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->child_head);
     ASSERT_NULL(expr->next);
 
@@ -120,7 +120,7 @@ void test_parse_empty_list_with_spaces(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->child_head);
     ASSERT_NULL(expr->next);
 
@@ -133,8 +133,8 @@ void test_parse_nested_empty_list(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
-    ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
+    ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->child_head->child_head);
     ASSERT_NULL(expr->next);
 
@@ -147,7 +147,7 @@ void test_parse_list_of_integers(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
     ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_INTEGER);
@@ -166,7 +166,7 @@ void test_parse_list_of_integers_with_spaces(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
     ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_INTEGER);
@@ -185,7 +185,7 @@ void test_parse_list_of_some_negative_integers(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, -1);
     ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_INTEGER);
@@ -204,18 +204,18 @@ void test_parse_multiple_lists(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
 
-    ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->next->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->next->child_head->vint, 2);
 
     ASSERT_EQ(expr->child_head->next->next->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->next->next->vint, 3);
 
-    ASSERT_EQ(expr->next->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->next->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->next->child_head);
 
     ASSERT_NULL(expr->next->next);
@@ -230,18 +230,18 @@ void test_parse_with_comments(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
 
-    ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->next->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->next->child_head->vint, 2);
 
     ASSERT_EQ(expr->child_head->next->next->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->next->next->vint, 3);
 
-    ASSERT_EQ(expr->next->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->next->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->next->child_head);
 
     ASSERT_NULL(expr->next->next);
@@ -254,7 +254,7 @@ void test_parse_curlys(void)
     sn_program_t *prog = sn_program_create(src, strlen(src));
 
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_INTEGER);
     ASSERT_EQ(expr->child_head->vint, 1);
     ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_INTEGER);
@@ -331,7 +331,7 @@ void test_parse_list_and_symbols(void)
     char *src = "(if {a > 0} a (- a))";
     sn_program_t *prog = sn_program_create(src, strlen(src));
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->next);
 
     expr = expr->child_head;
@@ -339,7 +339,7 @@ void test_parse_list_and_symbols(void)
     ASSERT(sn_symbol_equals_string(expr->sym, "if"));
 
     expr = expr->next;
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->child_head->sym, ">"));
 
@@ -356,7 +356,7 @@ void test_parse_list_and_symbols(void)
     ASSERT_EQ(expr->sym, a);
 
     expr = expr->next;
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->child_head->sym, "-"));
     ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_SYMBOL);
@@ -374,7 +374,7 @@ void test_parse_list_symbols_comments(void)
                 "  (- a)) ;; otherwise, negate a\n";
     sn_program_t *prog = sn_program_create(src, strlen(src));
     sn_expr_t *expr = sn_program_test_get_first_expr(prog);
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_NULL(expr->next);
 
     expr = expr->child_head;
@@ -382,7 +382,7 @@ void test_parse_list_symbols_comments(void)
     ASSERT_EQ(expr->sym, prog->sn_if);
 
     expr = expr->next;
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->child_head->sym, ">"));
 
@@ -399,7 +399,7 @@ void test_parse_list_symbols_comments(void)
     ASSERT_EQ(expr->sym, a);
 
     expr = expr->next;
-    ASSERT_EQ(expr->type, SN_EXPR_TYPE_SEXPR);
+    ASSERT_EQ(expr->type, SN_EXPR_TYPE_LIST);
     ASSERT_EQ(expr->child_head->type, SN_EXPR_TYPE_SYMBOL);
     ASSERT(sn_symbol_equals_string(expr->child_head->sym, "-"));
     ASSERT_EQ(expr->child_head->next->type, SN_EXPR_TYPE_SYMBOL);

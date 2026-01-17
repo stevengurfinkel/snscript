@@ -140,7 +140,7 @@ void sn_cur_consume(sn_program_t *prog, char c)
 
 void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
 {
-    expr->type = SN_EXPR_TYPE_SEXPR;
+    expr->type = SN_EXPR_TYPE_LIST;
     sn_expr_t **child_tail = &expr->child_head;
 
     sn_expr_t *child = NULL;

@@ -147,7 +147,7 @@ sn_error_t sn_expr_set_rtype(sn_expr_t *expr)
             return SN_SUCCESS;
         case SN_EXPR_TYPE_SYMBOL:
             return sn_symbol_set_rtype(expr);
-        case SN_EXPR_TYPE_SEXPR:
+        case SN_EXPR_TYPE_LIST:
             return sn_list_set_rtype(expr);
     }
     return SN_ERROR_GENERIC;
