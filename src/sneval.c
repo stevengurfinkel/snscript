@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include "snprogram.h"
 
-sn_value_t sn_program_run(sn_program_t *prog)
+sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
 {
-    if (sn_program_build(prog) != SN_SUCCESS) {
-        return sn_null;
+    *value_out = sn_null;
+    sn_error_t status = sn_program_build(prog);
+    if (status != SN_SUCCESS) {
+        return status;
     }
 
     prog->global_values = alloca(prog->global_idxs.count * sizeof prog->global_values[0]);
@@ -21,11 +23,11 @@ sn_value_t sn_program_run(sn_program_t *prog)
         prog->global_values[i] = sn_null;
     }
 
-    sn_value_t value = sn_null;
     for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
-        value = sn_program_eval_expr(prog, expr);
+        *value_out = sn_program_eval_expr(prog, expr);
     }
-    return value;
+
+    return prog->status;
 }
 
 sn_value_t sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref)

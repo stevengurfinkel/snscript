@@ -32,8 +32,9 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    sn_program_run(prog);
-    if (prog->status != SN_SUCCESS) {
+    sn_value_t value = { SN_VALUE_TYPE_INVALID };
+    status = sn_program_run(prog, &value);
+    if (status != SN_SUCCESS) {
         sn_program_write_error(prog, stderr);
         exit(-1);
     }
