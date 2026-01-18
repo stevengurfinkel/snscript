@@ -59,7 +59,8 @@ sn_value_t sn_program_eval_call(sn_program_t *prog, sn_expr_t *expr)
     }
 
     sn_value_t ret;
-    if (!values->builtin_fn(&ret, expr->child_count - 1, values + 1)) {
+    sn_error_t status = values->builtin_fn(&ret, expr->child_count - 1, values + 1);
+    if (status != SN_SUCCESS) {
         fprintf(prog->msg, "Error: builtin function returned an error\n");
         abort();
     }

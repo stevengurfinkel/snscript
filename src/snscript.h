@@ -50,7 +50,7 @@ typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_value_st sn_value_t;
 typedef struct sn_user_fn_st sn_user_fn_t;
-typedef bool (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
+typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 sn_error_t sn_program_create(sn_program_t **program_out, const char *source, size_t size);
 

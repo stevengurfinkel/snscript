@@ -1,24 +1,24 @@
 #include "snprogram.h"
 
-bool sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args)
+sn_error_t sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {
     ret->type = SN_VALUE_TYPE_INTEGER;
     ret->i = 0;
     for (int i = 0; i < arg_count; i++) {
         if (args[i].type != SN_VALUE_TYPE_INTEGER) {
-            return false;
+            return SN_ERROR_INVALID_PARAMS_TO_FN;
         }
         ret->i += args[i].i;
     }
-    return true;
+    return SN_SUCCESS;
 }
 
-bool sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args)
+sn_error_t sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {
     ret->type = SN_VALUE_TYPE_INTEGER;
     for (int i = 0; i < arg_count; i++) {
         if (args[i].type != SN_VALUE_TYPE_INTEGER) {
-            return false;
+            return SN_ERROR_INVALID_PARAMS_TO_FN;
         }
     }
 
@@ -29,13 +29,13 @@ bool sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args)
         ret->i = args[0].i - args[1].i;
     }
     else {
-        return false;
+        return SN_ERROR_INVALID_PARAMS_TO_FN;
     }
 
-    return true;
+    return SN_SUCCESS;
 }
 
-bool sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
+sn_error_t sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {
     ret->type = SN_VALUE_TYPE_NULL;
     for (int i = 0; i < arg_count; i++) {
@@ -44,7 +44,7 @@ bool sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
         }
         switch (args[i].type) {
             case SN_VALUE_TYPE_INVALID:
-                return false;
+                return SN_ERROR_INVALID_PARAMS_TO_FN;
             case SN_VALUE_TYPE_NULL:
                 printf("null");
                 break;
@@ -60,5 +60,5 @@ bool sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
         }
     }
     printf("\n");
-    return true;
+    return SN_SUCCESS;
 }
