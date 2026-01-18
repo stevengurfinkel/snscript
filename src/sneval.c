@@ -101,24 +101,3 @@ sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr)
             return sn_null;
     }
 }
-
-void sn_value_print(sn_value_t value, FILE *stream)
-{
-    switch (value.type) {
-        case SN_VALUE_TYPE_INVALID:
-            fprintf(stream, "!!INVALID");
-            break;
-        case SN_VALUE_TYPE_NULL:
-            fprintf(stream, "null");
-            break;
-        case SN_VALUE_TYPE_INTEGER:
-            fprintf(stream, "%ld", value.i);
-            break;
-        case SN_VALUE_TYPE_USER_FN:
-            fprintf(stream, "fn(%p)", value.user_fn);
-            break;
-        case SN_VALUE_TYPE_BUILTIN_FN:
-            fprintf(stream, "cfn(%p)", value.builtin_fn);
-            break;
-    }
-}

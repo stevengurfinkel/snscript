@@ -60,8 +60,6 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out);
 const char *sn_error_str(sn_error_t status);
 void sn_program_write_error(sn_program_t *prog, FILE *stream);
 
-void sn_value_print(sn_value_t value, FILE *stream);
-
 struct sn_value_st
 {
     sn_value_type_t type;
