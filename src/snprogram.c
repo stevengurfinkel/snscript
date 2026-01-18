@@ -40,17 +40,11 @@ sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error)
     assert(error != SN_SUCCESS);
 
     sn_program_t *prog = expr->prog;
-    prog->status = error;
     prog->error_pos = expr->pos;
     if (expr->type == SN_EXPR_TYPE_SYMBOL) {
         prog->error_sym = expr->sym;
     }
     return error;
-}
-
-sn_error_t sn_program_get_status(sn_program_t *prog)
-{
-    return prog->status;
 }
 
 void sn_program_write_error(sn_program_t *prog, FILE *stream)
@@ -68,12 +62,6 @@ void sn_program_write_error(sn_program_t *prog, FILE *stream)
         }
 
         fprintf(stream, "%d:%d: ", line, col);
-    }
-    if (prog->status != SN_SUCCESS) {
-        fprintf(stream,
-                "%s %s\n",
-                sn_error_str(prog->status),
-                prog->error_sym == NULL ? "" : prog->error_sym->value);
     }
 }
 
@@ -157,13 +145,13 @@ sn_error_t sn_program_create(sn_program_t **program_out, const char *source, siz
     sn_program_add_default_symbols(prog);
 
     prog->msg = stderr;
-    sn_program_parse(prog);
+    sn_error_t status = sn_program_parse(prog);
 
     prog->cur = NULL;
     prog->last = NULL;
 
     *program_out = prog;
-    return prog->status;
+    return status;
 }
 
 void sn_program_destroy(sn_program_t *prog)

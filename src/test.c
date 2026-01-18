@@ -555,7 +555,6 @@ void test_build_error(void)
                 "  (let b a a)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    ASSERT_EQ(sn_program_get_status(prog), SN_SUCCESS);
     ASSERT_EQ(sn_program_build(prog), SN_ERROR_LET_EXPR_NOT_3_ITEMS);
     sn_program_write_error(prog, stderr);
     sn_program_destroy(prog);

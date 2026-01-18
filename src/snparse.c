@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "snprogram.h"
 
-sn_expr_t *sn_cur_parse_expr(sn_program_t *prog);
+sn_error_t sn_cur_parse_expr(sn_program_t *prog, sn_expr_t **expr_out);
 
 bool sn_cur_more(sn_program_t *prog)
 {
@@ -74,7 +74,7 @@ bool sn_cur_is_symbol(sn_program_t *prog)
            (isalnum(*prog->cur) || strchr(ok, *prog->cur) != NULL);
 }
 
-int64_t sn_cur_parse_integer(sn_program_t *prog)
+sn_error_t sn_cur_parse_integer(sn_program_t *prog, sn_expr_t *expr)
 {
     int64_t sign = 1;
     int64_t value = 0;
@@ -90,14 +90,16 @@ int64_t sn_cur_parse_integer(sn_program_t *prog)
     }
 
     if (!sn_cur_is_end_of_token(prog)) {
-        prog->status = SN_ERROR_INVALID_INTEGER_LITERAL;
         prog->error_pos = prog->cur;
+        return SN_ERROR_INVALID_INTEGER_LITERAL;
     }
 
-    return sign * value;
+    expr->type = SN_EXPR_TYPE_INTEGER;
+    expr->vint = sign * value;
+    return SN_SUCCESS;
 }
 
-sn_symbol_t *sn_cur_parse_symbol(sn_program_t *prog)
+sn_error_t sn_cur_parse_symbol(sn_program_t *prog, sn_expr_t *expr)
 {
     const char *start = prog->cur;
     while (sn_cur_is_symbol(prog)) {
@@ -105,11 +107,13 @@ sn_symbol_t *sn_cur_parse_symbol(sn_program_t *prog)
     }
 
     if (!sn_cur_is_end_of_token(prog)) {
-        prog->status = SN_ERROR_INVALID_SYMBOL_NAME;
         prog->error_pos = prog->cur;
+        return SN_ERROR_INVALID_SYMBOL_NAME;
     }
 
-    return sn_program_get_symbol(prog, start, prog->cur);
+    expr->type = SN_EXPR_TYPE_SYMBOL;
+    expr->sym = sn_program_get_symbol(prog, start, prog->cur);
+    return SN_SUCCESS;
 }
 
 bool sn_cur_is_integer(sn_program_t *prog)
@@ -118,56 +122,56 @@ bool sn_cur_is_integer(sn_program_t *prog)
     return isdigit(c) || (c == '-' && sn_cur_two_more(prog) && isdigit(prog->cur[1]));
 }
 
-void sn_cur_consume(sn_program_t *prog, char c)
+sn_error_t sn_cur_consume(sn_program_t *prog, char c)
 {
-    if (prog->status != SN_SUCCESS) {
-        return;
-    }
-
     if (!sn_cur_more(prog)) {
-        prog->status = SN_ERROR_UNEXPECTED_END_OF_INPUT;
         prog->error_pos = prog->cur;
-        return;
+        return SN_ERROR_UNEXPECTED_END_OF_INPUT;
     }
     if (*prog->cur != c) {
-        prog->status = SN_ERROR_EXPECTED_EXPR_CLOSE;
         prog->error_pos = prog->cur;
-        return;
+        return SN_ERROR_EXPECTED_EXPR_CLOSE;
     }
 
     prog->cur++;
+    return SN_SUCCESS;
 }
 
-void sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
+sn_error_t sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
 {
+    sn_error_t status = SN_SUCCESS;
     expr->type = SN_EXPR_TYPE_LIST;
     sn_expr_t **child_tail = &expr->child_head;
-
     sn_expr_t *child = NULL;
-    while (prog->status == SN_SUCCESS && (child = sn_cur_parse_expr(prog)) != NULL) {
+
+    while ((status = sn_cur_parse_expr(prog, &child)) == SN_SUCCESS && child != NULL) {
         *child_tail = child;
         child_tail = &child->next;
         expr->child_count++;
     }
+
+    return status;
 }
 
-void sn_program_parse(sn_program_t *prog)
+sn_error_t sn_program_parse(sn_program_t *prog)
 {
     prog->expr.prog = prog;
     prog->expr.rtype = SN_RTYPE_PROGRAM;
-    sn_cur_parse_expr_list(prog, &prog->expr);
-    if (prog->status == SN_SUCCESS && prog->cur != prog->last) {
-        prog->status = SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT;
+
+    sn_error_t status = sn_cur_parse_expr_list(prog, &prog->expr);
+    if (status == SN_SUCCESS && prog->cur != prog->last) {
+        status = SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT;
         prog->error_pos = prog->cur;
     }
+
+    return status;
 }
 
-void sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
+sn_error_t sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
 {
     if (expr->child_count != 3) {
-        prog->status = SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS;
         prog->error_pos = expr->pos;
-        return;
+        return SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS;
     }
 
     sn_expr_t *exprs[3] = {expr->child_head,
@@ -177,13 +181,17 @@ void sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
     expr->child_head = exprs[1];
     expr->child_head->next = exprs[0];
     expr->child_head->next->next = exprs[2];
+    return SN_SUCCESS;
 }
 
-sn_expr_t *sn_cur_parse_expr(sn_program_t *prog)
+sn_error_t sn_cur_parse_expr(sn_program_t *prog, sn_expr_t **expr_out)
 {
+    sn_error_t status = SN_SUCCESS;
+    *expr_out = NULL;
+
     sn_cur_skip_whitespace(prog);
     if (sn_cur_is_expr_end(prog)) {
-        return NULL;
+        return SN_SUCCESS;
     }
 
     sn_expr_t *expr = calloc(1, sizeof *expr);
@@ -191,25 +199,58 @@ sn_expr_t *sn_cur_parse_expr(sn_program_t *prog)
     expr->pos = prog->cur;
 
     if (sn_cur_is_integer(prog)) {
-        expr->type = SN_EXPR_TYPE_INTEGER;
-        expr->vint = sn_cur_parse_integer(prog);
+        status = sn_cur_parse_integer(prog, expr);
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
     }
     else if (*prog->cur == '(') {
-        sn_cur_consume(prog, '(');
-        sn_cur_parse_expr_list(prog, expr);
-        sn_cur_consume(prog, ')');
+        status = sn_cur_consume(prog, '(');
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
+        status = sn_cur_parse_expr_list(prog, expr);
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
+        status = sn_cur_consume(prog, ')');
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
     }
     else if (*prog->cur == '{') {
-        sn_cur_consume(prog, '{');
-        sn_cur_parse_expr_list(prog, expr);
-        sn_cur_consume(prog, '}');
-        sn_program_reorder_infix_expr(prog, expr);
+        status = sn_cur_consume(prog, '{');
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
+        status = sn_cur_parse_expr_list(prog, expr);
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
+        status = sn_cur_consume(prog, '}');
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
+        status = sn_program_reorder_infix_expr(prog, expr);
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
     }
     else {
-        expr->type = SN_EXPR_TYPE_SYMBOL;
-        expr->sym = sn_cur_parse_symbol(prog);
+        status = sn_cur_parse_symbol(prog, expr);
+        if (status != SN_SUCCESS) {
+            goto Done;
+        }
     }
-    return expr;
+
+Done:
+    if (status == SN_SUCCESS) {
+        *expr_out = expr;
+    }
+    else {
+        free(expr);
+    }
+    return status;
 }
 
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog)

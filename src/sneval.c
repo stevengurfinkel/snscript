@@ -27,7 +27,7 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
         *value_out = sn_program_eval_expr(prog, expr);
     }
 
-    return prog->status;
+    return status;
 }
 
 sn_value_t sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref)
