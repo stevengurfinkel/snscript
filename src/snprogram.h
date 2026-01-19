@@ -105,7 +105,7 @@ extern sn_value_t sn_null;
 
 sn_error_t sn_program_build(sn_program_t *prog);
 sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error);
-sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr);
+sn_error_t sn_expr_eval(sn_expr_t *expr, sn_value_t *val_out);
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);

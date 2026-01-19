@@ -24,51 +24,43 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     }
 
     for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
-        *value_out = sn_program_eval_expr(prog, expr);
+        status = sn_expr_eval(expr, value_out);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
     }
 
     return status;
 }
 
-sn_value_t sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref)
+void sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref, sn_value_t *val_out)
 {
-    if (ref->scope == SN_SCOPE_GLOBAL) {
-        return prog->global_values[ref->index];
-    }
-    abort();
-    return sn_null;
+    assert(ref->scope == SN_SCOPE_GLOBAL);
+    *val_out = prog->global_values[ref->index];
 }
 
-sn_value_t sn_program_eval_call(sn_program_t *prog, sn_expr_t *expr)
+sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_value_t *val_out)
 {
-    if (expr->child_count == 0) {
-        fprintf(prog->msg, "Error: empty function call\n");
-        abort();
-    }
-
+    sn_error_t status = SN_SUCCESS;
     sn_value_t *values = alloca(expr->child_count * sizeof values[0]);
     sn_expr_t *child = expr->child_head;
+
     for (int i = 0; i < expr->child_count; i++) {
-        values[i] = sn_program_eval_expr(prog, child);
+        status = sn_expr_eval(child, &values[i]);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
         child = child->next;
     }
 
-    if (values->type != SN_VALUE_TYPE_BUILTIN_FN) {
-        fprintf(prog->msg, "Error: attempt to call something that is not a function\n");
-        abort();
+    if (values[0].type != SN_VALUE_TYPE_BUILTIN_FN) {
+        return SN_ERROR_CALLEE_NOT_A_FN;
     }
 
-    sn_value_t ret;
-    sn_error_t status = values->builtin_fn(&ret, expr->child_count - 1, values + 1);
-    if (status != SN_SUCCESS) {
-        fprintf(prog->msg, "Error: builtin function returned an error\n");
-        abort();
-    }
-
-    return ret;
+    return values->builtin_fn(val_out, expr->child_count - 1, values + 1);
 }
 
-sn_value_t sn_expr_eval_let(sn_expr_t *expr)
+sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_value_t *val_out)
 {
     sn_program_t *prog = expr->prog;
     sn_expr_t *kw = expr->child_head;
@@ -79,25 +71,38 @@ sn_value_t sn_expr_eval_let(sn_expr_t *expr)
     assert(var->rtype == SN_RTYPE_VAR);
     assert(var->ref.scope == SN_SCOPE_GLOBAL);
 
-    prog->global_values[var->ref.index] = sn_program_eval_expr(prog, value);
-    return sn_null;
+    *val_out = sn_null;
+    return sn_expr_eval(value, &prog->global_values[var->ref.index]);
 }
 
-sn_value_t sn_program_eval_expr(sn_program_t *prog, sn_expr_t *expr)
+void sn_expr_eval_literal(sn_expr_t *expr, sn_value_t *val_out)
+{
+    val_out->type = SN_VALUE_TYPE_INTEGER;
+    val_out->i = expr->vint;
+}
+
+sn_error_t sn_expr_eval(sn_expr_t *expr, sn_value_t *val_out)
 {
     switch (expr->rtype) {
-        case SN_EXPR_TYPE_INVALID:
-            abort();
-            return sn_null;
         case SN_RTYPE_LITERAL:
-            return (sn_value_t){ .type = SN_VALUE_TYPE_INTEGER, .i = expr->vint };
+            sn_expr_eval_literal(expr, val_out);
+            return SN_SUCCESS;
+
         case SN_RTYPE_VAR:
-            return sn_program_lookup_ref(prog, &expr->ref);
+            sn_program_lookup_ref(expr->prog, &expr->ref, val_out);
+            return SN_SUCCESS;
+
         case SN_RTYPE_CALL:
-            return sn_program_eval_call(prog, expr);
+            return sn_expr_eval_call(expr, val_out);
+
         case SN_RTYPE_LET_EXPR:
-            return sn_expr_eval_let(expr);
+            return sn_expr_eval_let(expr, val_out);
+
+        case SN_EXPR_TYPE_INVALID:
         default:
-            return sn_null;
+            break;
     }
+
+    abort();
+    return SN_ERROR_GENERIC;
 }
