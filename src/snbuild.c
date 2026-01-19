@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
 

@@ -1,7 +1,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 sn_error_t sn_cur_parse_expr(sn_program_t *prog, sn_expr_t **expr_out);
 

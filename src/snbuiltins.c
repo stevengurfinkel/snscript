@@ -1,4 +1,4 @@
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 sn_error_t sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {

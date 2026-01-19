@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
 {

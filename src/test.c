@@ -2,7 +2,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 #define ASSERT(x) assert(x)
 #define ASSERT_EQ(x, y) ASSERT((x) == (y))

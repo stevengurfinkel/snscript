@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 int main(int argc, char **argv)
 {

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "snprogram.h"
+#include "snscript_internal.h"
 
 
 void sn_symvec_resize(sn_symvec_t *symvec, int capacity)

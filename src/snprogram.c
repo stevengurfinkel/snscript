@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "snprogram.h"
+#include "snscript_internal.h"
 #define SN_ERROR_CASE(x) case SN_ERROR_ ## x: return "SN_ERROR_" #x
 
 const char *sn_error_str(sn_error_t status)
