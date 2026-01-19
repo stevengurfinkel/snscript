@@ -433,20 +433,28 @@ void test_parse_list_symbols_comments(void)
     sn_program_destroy(prog);
 }
 
+int64_t ival(sn_value_t *v)
+{
+    int64_t i = 0;
+    ASSERT_OK(sn_value_as_integer(v, &i));
+    return i;
+}
+
 void test_eval_literal(void)
 {
     char *src = "123\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    sn_value_t val = { SN_VALUE_TYPE_INVALID };
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_EQ_INT(val, 123);
+    sn_value_t *val = sn_value_create();
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_EQ(ival(val), 123);
     sn_program_destroy(prog);
 
     src = "-123\n";
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_EQ_INT(val, -123);
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_EQ(ival(val), -123);
+    sn_value_destroy(val);
     sn_program_destroy(prog);
 }
 
@@ -455,15 +463,16 @@ void test_eval_sum(void)
     char *src = "(+ 1 2 3)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    sn_value_t val = { SN_VALUE_TYPE_INVALID };
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_EQ_INT(val, 6);
+    sn_value_t *val = sn_value_create();
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_EQ(ival(val), 6);
     sn_program_destroy(prog);
 
     src = "{10 - 5}\n";
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_EQ_INT(val, 5);
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_EQ(ival(val), 5);
+    sn_value_destroy(val);
     sn_program_destroy(prog);
 }
 
@@ -472,9 +481,10 @@ void test_eval_nested(void)
     char *src = "(+ 1 2 3 (- -4))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    sn_value_t val = { SN_VALUE_TYPE_INVALID };
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_EQ_INT(val, 10);
+    sn_value_t *val = sn_value_create();
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_EQ(ival(val), 10);
+    sn_value_destroy(val);
     sn_program_destroy(prog);
 }
 
@@ -485,9 +495,10 @@ void test_variable(void)
                 "(+ x y)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    sn_value_t val = { SN_VALUE_TYPE_INVALID };
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_EQ_INT(val, 25);
+    sn_value_t *val = sn_value_create();
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_EQ(ival(val), 25);
+    sn_value_destroy(val);
     sn_program_destroy(prog);
 }
 
@@ -496,9 +507,10 @@ void test_null(void)
     char *src = "null\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    sn_value_t val = { SN_VALUE_TYPE_INVALID };
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_NULL_TYPE(val);
+    sn_value_t *val = sn_value_create();
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT(sn_value_is_null(val));
+    sn_value_destroy(val);
     sn_program_destroy(prog);
 }
 
@@ -507,9 +519,10 @@ void test_println(void)
     char *src = "(println (+ 1 2) (+ 2 3))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    sn_value_t val = { SN_VALUE_TYPE_INVALID };
-    ASSERT_OK(sn_program_run(prog, &val));
-    ASSERT_NULL_TYPE(val);
+    sn_value_t *val = sn_value_create();
+    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT(sn_value_is_null(val));
+    sn_value_destroy(val);
     sn_program_destroy(prog);
 }
 

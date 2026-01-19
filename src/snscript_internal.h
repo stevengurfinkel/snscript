@@ -4,6 +4,38 @@
 #include <stdio.h>
 #include "snscript.h"
 
+typedef enum sn_expr_type_en
+{
+    SN_EXPR_TYPE_INVALID = 0,
+    SN_EXPR_TYPE_INTEGER,
+    SN_EXPR_TYPE_SYMBOL,
+    SN_EXPR_TYPE_LIST,
+} sn_expr_type_t;
+
+typedef enum sn_value_type_en
+{
+    SN_VALUE_TYPE_INVALID,
+    SN_VALUE_TYPE_NULL,
+    SN_VALUE_TYPE_INTEGER,
+    SN_VALUE_TYPE_USER_FN,
+    SN_VALUE_TYPE_BUILTIN_FN,
+} sn_value_type_t;
+
+typedef struct sn_symbol_st sn_symbol_t;
+typedef struct sn_expr_st sn_expr_t;
+typedef struct sn_user_fn_st sn_user_fn_t;
+typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
+
+struct sn_value_st
+{
+    sn_value_type_t type;
+    union {
+        int64_t i;
+        sn_user_fn_t *user_fn;
+        sn_builtin_fn_t builtin_fn;
+    };
+};
+
 typedef enum sn_rtype_st
 {
     SN_RTYPE_INVALID,

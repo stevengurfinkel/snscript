@@ -32,13 +32,13 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    sn_value_t value = { SN_VALUE_TYPE_INVALID };
-    status = sn_program_run(prog, &value);
+    sn_value_t *value = sn_value_create();
+    status = sn_program_run(prog, value);
     if (status != SN_SUCCESS) {
         sn_program_write_error(prog, stderr);
         exit(-1);
     }
-
+    sn_value_destroy(value);
     sn_program_destroy(prog);
     return 0;
 }
