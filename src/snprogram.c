@@ -41,29 +41,23 @@ sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error)
     assert(error != SN_SUCCESS);
 
     sn_program_t *prog = expr->prog;
-    prog->error_pos = expr->pos;
+    prog->error_line = expr->line;
+    prog->error_col = expr->col;
     if (expr->type == SN_EXPR_TYPE_SYMBOL) {
         prog->error_sym = expr->sym;
     }
     return error;
 }
 
-void sn_program_write_error(sn_program_t *prog, FILE *stream)
+void sn_program_error_pos(sn_program_t *prog, int *line_out, int *col_out)
 {
-    if (prog->error_pos != NULL) {
-        int line = 1;
-        int col = 1;
+    *line_out = prog->error_line;
+    *col_out = prog->error_col;
+}
 
-        for (const char *c = prog->start; c < prog->error_pos; c++) {
-            col++;
-            if (*c == '\n') {
-                line++;
-                col = 1;
-            }
-        }
-
-        fprintf(stream, "%d:%d: ", line, col);
-    }
+void sn_program_error_symbol(sn_program_t *prog, const char **symbol_out)
+{
+    *symbol_out = (prog->error_sym == NULL) ? NULL : prog->error_sym->value;
 }
 
 sn_symbol_t *sn_program_add_symbol(sn_program_t *prog, const char *str, size_t size)
@@ -118,8 +112,6 @@ void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_f
 
 void sn_program_add_default_symbols(sn_program_t *prog)
 {
-    sn_symvec_init(&prog->global_idxs);
-
     // add keywords
     prog->sn_let = sn_program_default_symbol(prog, "let");
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
@@ -142,10 +134,9 @@ sn_error_t sn_program_create(sn_program_t **program_out, const char *source, siz
     prog->last = source + size;
 
     prog->symbol_tail = &prog->symbol_head;
-
+    sn_symvec_init(&prog->global_idxs);
     sn_program_add_default_symbols(prog);
 
-    prog->msg = stderr;
     sn_error_t status = sn_program_parse(prog);
 
     prog->cur = NULL;

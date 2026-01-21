@@ -94,7 +94,8 @@ struct sn_expr_st
 
     sn_ref_t ref;
     sn_program_t *prog;
-    const char *pos;
+    int line;
+    int col;
 };
 
 typedef struct sn_builtin_value_st sn_builtin_value_t;
@@ -106,7 +107,8 @@ struct sn_builtin_value_st
 
 struct sn_program_st
 {
-    const char *error_pos;
+    int error_line;
+    int error_col;
     sn_symbol_t *error_sym;
 
     sn_expr_t expr;
@@ -117,8 +119,8 @@ struct sn_program_st
     const char *start;
     const char *cur;
     const char *last;
-
-    FILE *msg;
+    int cur_line;
+    int cur_col;
 
     // special forms
     sn_symbol_t *sn_let;

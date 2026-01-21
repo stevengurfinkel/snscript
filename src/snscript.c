@@ -3,6 +3,25 @@
 #include <assert.h>
 #include "snscript.h"
 
+void write_error(const char *file, sn_error_t status, sn_program_t *prog)
+{
+    int line = 0;
+    int col = 0;
+    const char *str = NULL;
+
+    sn_program_error_pos(prog, &line, &col);
+    sn_program_error_symbol(prog, &str);
+
+    fprintf(stderr,
+            "%s:%d:%d %s%s%s\n",
+            file,
+            line,
+            col,
+            sn_error_str(status),
+            str == NULL ? "" : ": ",
+            str == NULL ? "" : str);
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -28,14 +47,14 @@ int main(int argc, char **argv)
     sn_program_t *prog = NULL;
     sn_error_t status = sn_program_create(&prog, bytes, size);
     if (status != SN_SUCCESS) {
-        sn_program_write_error(prog, stderr);
+        write_error(argv[1], status, prog);
         exit(-1);
     }
 
     sn_value_t *value = sn_value_create();
     status = sn_program_run(prog, value);
     if (status != SN_SUCCESS) {
-        sn_program_write_error(prog, stderr);
+        write_error(argv[1], status, prog);
         exit(-1);
     }
     sn_value_destroy(value);

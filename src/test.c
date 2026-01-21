@@ -516,7 +516,7 @@ void test_null(void)
 
 void test_println(void)
 {
-    char *src = "(println (+ 1 2) (+ 2 3))\n";
+    char *src = "(println (+ 0 1) (+ 1 1) (+ 1 2))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     sn_value_t *val = sn_value_create();
@@ -526,39 +526,56 @@ void test_println(void)
     sn_program_destroy(prog);
 }
 
+void error_check(sn_program_t *prog, int expect_line, int expect_col, const char *expect_str)
+{
+    int actual_line;
+    int actual_col;
+    const char *actual_str;
+    sn_program_error_pos(prog, &actual_line, &actual_col);
+    sn_program_error_symbol(prog, &actual_str);
+    ASSERT_EQ(expect_line, actual_line);
+    ASSERT_EQ(expect_col, actual_col);
+    if (expect_str == NULL) {
+        ASSERT_EQ(actual_str, NULL);
+    }
+    else {
+        ASSERT_EQ(strcmp(actual_str, expect_str), 0);
+    }
+}
+
 void test_parse_error(void)
 {
     char *src = "(\n";
     sn_program_t *prog = NULL;
     ASSERT_EQ(sn_program_create(&prog, src, strlen(src)), SN_ERROR_UNEXPECTED_END_OF_INPUT);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 2, 1, NULL);
     sn_program_destroy(prog);
 
     src = ")\n";
     ASSERT_EQ(sn_program_create(&prog, src, strlen(src)), SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 1, 1, NULL);
     sn_program_destroy(prog);
 
     src = "(}\n";
     ASSERT_EQ(sn_program_create(&prog, src, strlen(src)), SN_ERROR_EXPECTED_EXPR_CLOSE);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 1, 2, NULL);
     sn_program_destroy(prog);
 
     src = "(\n"
           "(x)\n"
           "({a b c d}))\n";
     ASSERT_EQ(sn_program_create(&prog, src, strlen(src)), SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 3, 2, NULL);
     sn_program_destroy(prog);
 
     src = "\n\n1234x";
     ASSERT_EQ(sn_program_create(&prog, src, strlen(src)), SN_ERROR_INVALID_INTEGER_LITERAL);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 3, 5, NULL);
     sn_program_destroy(prog);
 
     src = "var'";
     ASSERT_EQ(sn_program_create(&prog, src, strlen(src)), SN_ERROR_INVALID_SYMBOL_NAME);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 1, 4, NULL);
     sn_program_destroy(prog);
 }
 
@@ -569,7 +586,7 @@ void test_build_error(void)
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_EQ(sn_program_build(prog), SN_ERROR_LET_EXPR_NOT_3_ITEMS);
-    sn_program_write_error(prog, stderr);
+    error_check(prog, 2, 3, NULL);
     sn_program_destroy(prog);
 }
 

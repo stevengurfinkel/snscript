@@ -1,13 +1,32 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "snscript_internal.h"
 
 sn_error_t sn_cur_parse_expr(sn_program_t *prog, sn_expr_t **expr_out);
 
+sn_error_t sn_cur_error(sn_program_t *prog, sn_error_t status)
+{
+    prog->error_line = prog->cur_line;
+    prog->error_col = prog->cur_col;
+    return status;
+}
+
 bool sn_cur_more(sn_program_t *prog)
 {
     return prog->cur < prog->last;
+}
+
+void sn_cur_next(sn_program_t *prog)
+{
+    assert(sn_cur_more(prog));
+    prog->cur_col++;
+    if (*prog->cur == '\n') {
+        prog->cur_line++;
+        prog->cur_col = 1;
+    }
+    prog->cur++;
 }
 
 bool sn_cur_two_more(sn_program_t *prog)
@@ -43,7 +62,7 @@ bool sn_cur_did_skip_comment(sn_program_t *prog)
 {
     if (sn_cur_is_comment_start(prog)) {
         while (sn_cur_more(prog) && *prog->cur != '\n') {
-            prog->cur++;
+            sn_cur_next(prog);
         }
         return true;
     }
@@ -55,7 +74,7 @@ bool sn_cur_did_skip_whitespace(sn_program_t *prog)
 {
     bool did_skip = false;
     while (sn_cur_is_whitespace(prog)) {
-        prog->cur++;
+        sn_cur_next(prog);
         did_skip = true;
     }
 
@@ -81,17 +100,16 @@ sn_error_t sn_cur_parse_integer(sn_program_t *prog, sn_expr_t *expr)
 
     if (*prog->cur == '-') {
         sign = -1;
-        prog->cur++;
+        sn_cur_next(prog);
     }
 
     while (sn_cur_more(prog) && isdigit(*prog->cur)) {
         value = 10 * value + *prog->cur - '0';
-        prog->cur++;
+        sn_cur_next(prog);
     }
 
     if (!sn_cur_is_end_of_token(prog)) {
-        prog->error_pos = prog->cur;
-        return SN_ERROR_INVALID_INTEGER_LITERAL;
+        return sn_cur_error(prog, SN_ERROR_INVALID_INTEGER_LITERAL);
     }
 
     expr->type = SN_EXPR_TYPE_INTEGER;
@@ -103,12 +121,11 @@ sn_error_t sn_cur_parse_symbol(sn_program_t *prog, sn_expr_t *expr)
 {
     const char *start = prog->cur;
     while (sn_cur_is_symbol(prog)) {
-        prog->cur++;
+        sn_cur_next(prog);
     }
 
     if (!sn_cur_is_end_of_token(prog)) {
-        prog->error_pos = prog->cur;
-        return SN_ERROR_INVALID_SYMBOL_NAME;
+        return sn_cur_error(prog, SN_ERROR_INVALID_SYMBOL_NAME);
     }
 
     expr->type = SN_EXPR_TYPE_SYMBOL;
@@ -125,15 +142,13 @@ bool sn_cur_is_integer(sn_program_t *prog)
 sn_error_t sn_cur_consume(sn_program_t *prog, char c)
 {
     if (!sn_cur_more(prog)) {
-        prog->error_pos = prog->cur;
-        return SN_ERROR_UNEXPECTED_END_OF_INPUT;
+        return sn_cur_error(prog, SN_ERROR_UNEXPECTED_END_OF_INPUT);
     }
     if (*prog->cur != c) {
-        prog->error_pos = prog->cur;
-        return SN_ERROR_EXPECTED_EXPR_CLOSE;
+        return sn_cur_error(prog, SN_ERROR_EXPECTED_EXPR_CLOSE);
     }
 
-    prog->cur++;
+    sn_cur_next(prog);
     return SN_SUCCESS;
 }
 
@@ -155,13 +170,15 @@ sn_error_t sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
 
 sn_error_t sn_program_parse(sn_program_t *prog)
 {
+    prog->cur_line = 1;
+    prog->cur_col = 1;
+
     prog->expr.prog = prog;
     prog->expr.rtype = SN_RTYPE_PROGRAM;
 
     sn_error_t status = sn_cur_parse_expr_list(prog, &prog->expr);
     if (status == SN_SUCCESS && prog->cur != prog->last) {
-        status = SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT;
-        prog->error_pos = prog->cur;
+        return sn_cur_error(prog, SN_ERROR_EXTRA_CHARS_AT_END_OF_INPUT);
     }
 
     return status;
@@ -170,8 +187,7 @@ sn_error_t sn_program_parse(sn_program_t *prog)
 sn_error_t sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
 {
     if (expr->child_count != 3) {
-        prog->error_pos = expr->pos;
-        return SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS;
+        return sn_expr_error(expr, SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS);
     }
 
     sn_expr_t *exprs[3] = {expr->child_head,
@@ -196,7 +212,8 @@ sn_error_t sn_cur_parse_expr(sn_program_t *prog, sn_expr_t **expr_out)
 
     sn_expr_t *expr = calloc(1, sizeof *expr);
     expr->prog = prog;
-    expr->pos = prog->cur;
+    expr->line = prog->cur_line;
+    expr->col = prog->cur_col;
 
     if (sn_cur_is_integer(prog)) {
         status = sn_cur_parse_integer(prog, expr);
