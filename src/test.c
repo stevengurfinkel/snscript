@@ -629,6 +629,71 @@ void test_build_error(void)
 
     error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 1, 1, NULL,
                 "(fn (foo))\n");
+
+    error_build(SN_ERROR_FN_PROTO_NOT_LIST, 2, 1, NULL,
+                "\n"
+                "(fn bar baz)\n");
+
+    // function name must not already be declared
+    error_build(SN_ERROR_REDECLARED, 2, 6, "foo",
+                "(let foo 1)\n"
+                "(fn (foo) 1)\n");
+
+    // function prototype must be a list of symbols
+    error_build(SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS, 1, 1, NULL,
+                "(fn (1 2) null)\n");
+
+    error_build(SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS, 1, 1, NULL,
+                "(fn (foo (+ 1 2)) null)\n");
+
+    error_build(SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS, 1, 1, NULL,
+                "(fn ((null)) null)\n");
+
+    // if-statement with only a 'true' arm
+    error_build(SN_SUCCESS, 0, 0, NULL,
+                "(let x 0)\n"
+                "(let y (if x 0))\n");
+
+    // if-statement with both a 'true' and 'false' arm
+    error_build(SN_SUCCESS, 0, 0, NULL,
+                "(let x 0)\n"
+                "(let y (if x 0 1))\n");
+
+    // no arms
+    error_build(SN_ERROR_IF_EXPR_INVALID_LENGTH, 2, 8, NULL,
+                "(let x 0)\n"
+                "(let y (if x))\n");
+
+    // three arms
+    error_build(SN_ERROR_IF_EXPR_INVALID_LENGTH, 2, 8, NULL,
+                "(let x 0)\n"
+                "(let y (if x 0 1 2))\n");
+
+    // empty epxression
+    error_build(SN_ERROR_EMPTY_EXPR, 1, 1, NULL,
+                "()\n");
+
+    error_build(SN_ERROR_EMPTY_EXPR, 2, 10, NULL,
+                "(let a\n"
+                "     (if () - +))\n");
+
+    // nested functions aren't allowed
+    error_build(SN_ERROR_NESTED_FN_EXPR, 1, 8, NULL,
+                "(let a (fn (foo) null))\n");
+
+    error_build(SN_ERROR_NESTED_FN_EXPR, 1, 5, NULL,
+                "(if (fn (foo) null) null 1)\n");
+
+    error_build(SN_ERROR_NESTED_FN_EXPR, 2, 5, NULL,
+                "(fn (foo a b)\n"
+                "    (fn (nest) null))\n");
+
+    // nor nested lets
+    error_build(SN_ERROR_NESTED_LET_EXPR, 1, 8, NULL,
+                "(let a (let b 0))\n");
+
+    error_build(SN_ERROR_NESTED_LET_EXPR, 1, 5, NULL,
+                "(if (let a 0) null 1)\n");
 }
 
 int main(int argc, char **argv)
