@@ -10,7 +10,7 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
         return status;
     }
 
-    prog->global_values = alloca(prog->global_idxs.count * sizeof prog->global_values[0]);
+    prog->global_values = alloca(prog->globals.idxs.count * sizeof prog->global_values[0]);
 
     sn_builtin_value_t *bvalue = prog->builtin_head;
     for (int i = 0; i < prog->builtin_count; i++) {
@@ -19,7 +19,7 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     }
     assert(bvalue == NULL);
 
-    for (int i = prog->builtin_count; i < prog->global_idxs.count; i++) {
+    for (int i = prog->builtin_count; i < prog->globals.idxs.count; i++) {
         prog->global_values[i] = sn_null;
     }
 
@@ -35,7 +35,7 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
 
 void sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref, sn_value_t *val_out)
 {
-    assert(ref->scope == SN_SCOPE_GLOBAL);
+    assert(ref->scope == SN_SCOPE_TYPE_GLOBAL);
     *val_out = prog->global_values[ref->index];
 }
 
@@ -69,7 +69,7 @@ sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_value_t *val_out)
 
     assert(kw->rtype == SN_RTYPE_LET_KEYW);
     assert(var->rtype == SN_RTYPE_VAR);
-    assert(var->ref.scope == SN_SCOPE_GLOBAL);
+    assert(var->ref.scope == SN_SCOPE_TYPE_GLOBAL);
 
     *val_out = sn_null;
     return sn_expr_eval(value, &prog->global_values[var->ref.index]);

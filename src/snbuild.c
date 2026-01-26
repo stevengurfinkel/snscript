@@ -153,31 +153,89 @@ sn_error_t sn_expr_set_rtype(sn_expr_t *expr)
     return SN_ERROR_GENERIC;
 }
 
-bool sn_program_lookup_symbol(sn_program_t *prog, sn_symbol_t *sym, sn_ref_t *ref_out)
+void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent)
 {
-    ref_out->scope = SN_SCOPE_GLOBAL;
-    ref_out->index = sn_symvec_idx(&prog->global_idxs, sym);
-    return ref_out->index >= 0;
+    sn_symvec_init(&scope->idxs);
+    scope->parent = parent;
+    scope->type = (parent == NULL) ? SN_SCOPE_TYPE_GLOBAL : SN_SCOPE_TYPE_LOCAL;
+    if (parent && parent->type == SN_SCOPE_TYPE_LOCAL) {
+        scope->idx_offset = parent->idx_offset + parent->idxs.count;
+    }
 }
 
-sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
+sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
 {
-    sn_program_t *prog = expr->prog;
+    int idx = sn_symvec_append(&scope->idxs, name);
+    if (idx < 0) {
+        return SN_ERROR_REDECLARED;
+    }
 
+    if (ref != NULL) {
+        ref->scope = scope->type;
+        ref->index = idx + scope->idx_offset;
+    }
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
+{
+    while (scope != NULL) {
+        int idx = sn_symvec_idx(&scope->idxs, name);
+        if (idx >= 0) {
+            ref->scope = scope->type;
+            ref->index = idx + scope->idx_offset;
+            return SN_SUCCESS;
+        }
+        scope = scope->parent;
+    }
+
+    return SN_ERROR_UNDECLARED;
+}
+
+void sn_scope_deinit(sn_scope_t *scope)
+{
+    sn_symvec_deinit(&scope->idxs);
+}
+
+sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_func_t **func_out)
+{
+    sn_func_t *func = calloc(sizeof *func, 1);
+
+    assert(expr->rtype == SN_RTYPE_FN_EXPR);
+
+    sn_expr_t *proto = expr->child_head;
+    assert(proto->rtype == SN_RTYPE_CALL);
+
+    func->name = proto->child_head->sym;
+
+    for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
+        func->param_count++;
+    }
+
+    func->body = proto->next;
+    assert(func->body != NULL);
+
+
+    *func_out = func;
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope)
+{
     if (expr->rtype == SN_RTYPE_LET_EXPR) {
         assert(expr->child_head->rtype == SN_RTYPE_LET_KEYW);
 
         sn_expr_t *name = expr->child_head->next;
 
-        sn_error_t status = sn_expr_link_vars(name->next, expr->rtype);
+        sn_error_t status = sn_expr_link_vars(name->next, scope);
         if (status != SN_SUCCESS) {
             return status;
         }
 
-        name->ref.scope = SN_SCOPE_GLOBAL;
-        name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
-        if (name->ref.index < 0) {
-            return sn_expr_error(name, SN_ERROR_REDECLARED);
+        status = sn_scope_add_var(scope, name->sym, &name->ref);
+        if (status != SN_SUCCESS) {
+            return sn_expr_error(name, status);
         }
     }
     else if (expr->rtype  == SN_RTYPE_FN_EXPR) {
@@ -187,21 +245,21 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
         assert(proto->rtype == SN_RTYPE_CALL);
         sn_expr_t *name = proto->child_head;
 
-        name->ref.scope = SN_SCOPE_GLOBAL;
-        name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
-        if (name->ref.index < 0) {
-            return sn_expr_error(name, SN_ERROR_REDECLARED);
+        sn_error_t status = sn_scope_add_var(scope, name->sym, &name->ref);
+        if (status != SN_SUCCESS) {
+            return sn_expr_error(name, status);
         }
     }
     else if (expr->rtype == SN_RTYPE_VAR) {
-        if (!sn_program_lookup_symbol(prog, expr->sym, &expr->ref)) {
-            return sn_expr_error(expr, SN_ERROR_UNDECLARED);
+        sn_error_t status = sn_scope_find_var(scope, expr->sym, &expr->ref);
+        if (status != SN_SUCCESS) {
+            return sn_expr_error(expr, status);
         }
     }
 
     if (expr->rtype != SN_RTYPE_LET_EXPR) {
         for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
-            sn_error_t status = sn_expr_link_vars(child, expr->rtype);
+            sn_error_t status = sn_expr_link_vars(child, scope);
             if (status != SN_SUCCESS) {
                 return status;
             }
@@ -217,5 +275,5 @@ sn_error_t sn_program_build(sn_program_t *prog)
     if (status != SN_SUCCESS) {
         return status;
     }
-    return sn_expr_link_vars(&prog->expr, SN_RTYPE_INVALID);
+    return sn_expr_link_vars(&prog->expr, &prog->globals);
 }

@@ -92,8 +92,8 @@ sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const 
 sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
 {
     sn_symbol_t *name = sn_program_default_symbol(prog, str);
-    int idx = sn_symvec_append(&prog->global_idxs, name);
-    assert(idx >= 0);
+    sn_error_t status = sn_scope_add_var(&prog->globals, name, NULL);
+    assert(status == SN_SUCCESS);
 
     sn_builtin_value_t *bvalue = calloc(1, sizeof *bvalue);
     bvalue->next = prog->builtin_head;
@@ -134,7 +134,7 @@ sn_error_t sn_program_create(sn_program_t **program_out, const char *source, siz
     prog->last = source + size;
 
     prog->symbol_tail = &prog->symbol_head;
-    sn_symvec_init(&prog->global_idxs);
+    sn_scope_init(&prog->globals, NULL);
     sn_program_add_default_symbols(prog);
 
     sn_error_t status = sn_program_parse(prog);

@@ -23,7 +23,8 @@ typedef enum sn_value_type_en
 
 typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_expr_st sn_expr_t;
-typedef struct sn_user_fn_st sn_user_fn_t;
+typedef struct sn_func_st sn_func_t;
+typedef struct sn_scope_st sn_scope_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 struct sn_value_st
@@ -31,7 +32,7 @@ struct sn_value_st
     sn_value_type_t type;
     union {
         int64_t i;
-        sn_user_fn_t *user_fn;
+        sn_func_t *user_fn;
         sn_builtin_fn_t builtin_fn;
     };
 };
@@ -70,17 +71,33 @@ typedef struct sn_symvec_st
     sn_symbol_t **names;
 } sn_symvec_t;
 
-typedef enum sn_scope_en
+typedef enum sn_scope_type_en
 {
-    SN_SCOPE_GLOBAL,
-    SN_SCOPE_LOCAL,
-} sn_scope_t;
+    SN_SCOPE_TYPE_GLOBAL,
+    SN_SCOPE_TYPE_LOCAL,
+} sn_scope_type_t;
 
 typedef struct sn_ref_st
 {
-    sn_scope_t scope;
+    sn_scope_type_t scope;
     int index;
 } sn_ref_t;
+
+struct sn_scope_st
+{
+    sn_scope_type_t type;
+    int idx_offset;
+    sn_scope_t *parent;
+    sn_symvec_t idxs;
+};
+
+struct sn_func_st
+{
+    int param_count;
+    sn_scope_t scope;
+    sn_symbol_t *name;
+    sn_expr_t *body;
+};
 
 struct sn_expr_st
 {
@@ -131,7 +148,7 @@ struct sn_program_st
     int builtin_count;
     sn_builtin_value_t *builtin_head;
 
-    sn_symvec_t global_idxs;
+    sn_scope_t globals;
     sn_value_t *global_values;
 };
 
@@ -145,6 +162,11 @@ bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);
 sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end);
 sn_error_t sn_program_parse(sn_program_t *prog);
+
+void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent);
+void sn_scope_deinit(sn_scope_t *scope);
+sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
+sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
 
 void sn_symvec_init(sn_symvec_t *symvec);
 int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);
