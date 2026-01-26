@@ -175,8 +175,20 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
             return sn_expr_error(name, SN_ERROR_REDECLARED);
         }
     }
+    else if (expr->rtype  == SN_RTYPE_FN_EXPR) {
+        assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
 
-    if (expr->rtype == SN_RTYPE_VAR) {
+        sn_expr_t *proto = expr->child_head->next;
+        assert(proto->rtype == SN_RTYPE_CALL);
+        sn_expr_t *name = proto->child_head;
+
+        name->ref.scope = SN_SCOPE_GLOBAL;
+        name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
+        if (name->ref.index < 0) {
+            return sn_expr_error(name, SN_ERROR_REDECLARED);
+        }
+    }
+    else if (expr->rtype == SN_RTYPE_VAR) {
         if (!sn_program_lookup_symbol(prog, expr->sym, &expr->ref)) {
             return sn_expr_error(expr, SN_ERROR_UNDECLARED);
         }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "snscript_internal.h"
 
@@ -579,15 +580,52 @@ void test_parse_error(void)
     sn_program_destroy(prog);
 }
 
-void test_build_error(void)
+void
+error_build(sn_error_t err_code,
+            int err_line,
+            int err_col,
+            const char *err_sym,
+            const char *src)
 {
-    char *src = "(let a 1)\n"
-                "  (let b a a)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    ASSERT_EQ(sn_program_build(prog), SN_ERROR_LET_EXPR_NOT_3_ITEMS);
-    error_check(prog, 2, 3, NULL);
+    sn_error_t status = sn_program_build(prog);
+    if (status != err_code) {
+        fprintf(stderr, "sn_program_build returned %s\n", sn_error_str(status));
+        abort();
+    }
+    if (err_code != SN_SUCCESS) {
+        error_check(prog, err_line, err_col, err_sym);
+    }
     sn_program_destroy(prog);
+}
+
+
+void test_build_error(void)
+{
+    error_build(SN_ERROR_LET_EXPR_NOT_3_ITEMS, 2, 3, NULL,
+                "(let a 1)\n"
+                "  (let b a a)\n");
+
+    error_build(SN_ERROR_LET_EXPR_BAD_DEST, 3, 1, NULL,
+                "(let a 1)\n"
+                "(let b 2)\n"
+                "(let (+ a b) 3)\n");
+
+    // function that returns NULL -> success
+    error_build(SN_SUCCESS, 0, 0, NULL,
+                "(fn (foo) null)\n");
+
+    // function mus have at least three elements
+    error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 2, 2, NULL,
+                "(let x +)\n"
+                " (fn)\n");
+
+    error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 1, 1, NULL,
+                "(fn (foo a b c))\n");
+
+    error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 1, 1, NULL,
+                "(fn (foo))\n");
 }
 
 int main(int argc, char **argv)
