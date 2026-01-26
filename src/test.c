@@ -612,6 +612,9 @@ void test_build_error(void)
                 "(let b 2)\n"
                 "(let (+ a b) 3)\n");
 
+    error_build(SN_ERROR_UNDECLARED, 1, 8, "a",
+                "(let a a)\n");
+
     // function that returns NULL -> success
     error_build(SN_SUCCESS, 0, 0, NULL,
                 "(fn (foo) null)\n");

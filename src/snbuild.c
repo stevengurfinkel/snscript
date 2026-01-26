@@ -169,6 +169,11 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
 
         sn_expr_t *name = expr->child_head->next;
 
+        sn_error_t status = sn_expr_link_vars(name->next, expr->rtype);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+
         name->ref.scope = SN_SCOPE_GLOBAL;
         name->ref.index = sn_symvec_append(&prog->global_idxs, name->sym);
         if (name->ref.index < 0) {
@@ -194,10 +199,12 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_rtype_t parent_type)
         }
     }
 
-    for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
-        sn_error_t status = sn_expr_link_vars(child, expr->rtype);
-        if (status != SN_SUCCESS) {
-            return status;
+    if (expr->rtype != SN_RTYPE_LET_EXPR) {
+        for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
+            sn_error_t status = sn_expr_link_vars(child, expr->rtype);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
         }
     }
 
