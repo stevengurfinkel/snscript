@@ -11,14 +11,15 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
         return status;
     }
 
-    size_t bytes = prog->globals.idxs.count * sizeof prog->global_values[0];
-    prog->global_values = alloca(bytes);
-    memset(prog->global_values, '\0', bytes);
+    sn_env_t env = {0};
+    size_t bytes = prog->globals.idxs.count * sizeof env.globals[0];
+    env.globals = alloca(bytes);
+    memset(env.globals, '\0', bytes);
 
-    sn_scope_init_consts(&prog->globals, prog->global_values);
+    sn_scope_init_consts(&prog->globals, env.globals);
 
     for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
-        status = sn_expr_eval(expr, value_out);
+        status = sn_expr_eval(expr, &env, value_out);
         if (status != SN_SUCCESS) {
             return status;
         }
@@ -27,17 +28,21 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     return status;
 }
 
-void sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref, sn_value_t *val_out)
+sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
 {
-    assert(ref->scope == SN_SCOPE_TYPE_GLOBAL);
-    *val_out = prog->global_values[ref->index];
+    assert(ref->scope == SN_SCOPE_TYPE_GLOBAL || ref->scope == SN_SCOPE_TYPE_LOCAL);
+
+    if (ref->scope == SN_SCOPE_TYPE_GLOBAL) {
+        return &env->globals[ref->index];
+    }
+    return &env->locals[ref->index];
 }
 
-sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_value_t *val_out)
+sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     sn_value_t fn_value = {0};
     sn_expr_t *child = expr->child_head;
-    sn_error_t status = sn_expr_eval(child, &fn_value);
+    sn_error_t status = sn_expr_eval(child, env, &fn_value);
     if (status != SN_SUCCESS) {
         return status;
     }
@@ -49,7 +54,7 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_value_t *val_out)
 
         for (int i = 0; i < expr->child_count - 1; i++) {
             child = child->next;
-            status = sn_expr_eval(child, &args[i]);
+            status = sn_expr_eval(child, env, &args[i]);
             if (status != SN_SUCCESS) {
                 return status;
             }
@@ -63,9 +68,8 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_value_t *val_out)
     return SN_ERROR_GENERIC;
 }
 
-sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_value_t *val_out)
+sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
-    sn_program_t *prog = expr->prog;
     sn_expr_t *kw = expr->child_head;
     sn_expr_t *var = kw->next;
     sn_expr_t *value = var->next;
@@ -75,12 +79,7 @@ sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_value_t *val_out)
     assert(var->ref.scope == SN_SCOPE_TYPE_GLOBAL);
 
     *val_out = sn_null;
-    return sn_expr_eval(value, &prog->global_values[var->ref.index]);
-}
-
-void sn_expr_eval_fn(sn_expr_t *expr, sn_value_t *val_out)
-{
-    *val_out = expr->prog->global_values[expr->ref.index];
+    return sn_expr_eval(value, env, sn_env_lookup_ref(env, &var->ref));
 }
 
 void sn_expr_eval_literal(sn_expr_t *expr, sn_value_t *val_out)
@@ -89,7 +88,7 @@ void sn_expr_eval_literal(sn_expr_t *expr, sn_value_t *val_out)
     val_out->i = expr->vint;
 }
 
-sn_error_t sn_expr_eval(sn_expr_t *expr, sn_value_t *val_out)
+sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     switch (expr->rtype) {
         case SN_RTYPE_LITERAL:
@@ -97,17 +96,17 @@ sn_error_t sn_expr_eval(sn_expr_t *expr, sn_value_t *val_out)
             return SN_SUCCESS;
 
         case SN_RTYPE_VAR:
-            sn_program_lookup_ref(expr->prog, &expr->ref, val_out);
+            *val_out =  *sn_env_lookup_ref(env, &expr->ref);
             return SN_SUCCESS;
 
         case SN_RTYPE_CALL:
-            return sn_expr_eval_call(expr, val_out);
+            return sn_expr_eval_call(expr, env, val_out);
 
         case SN_RTYPE_LET_EXPR:
-            return sn_expr_eval_let(expr, val_out);
+            return sn_expr_eval_let(expr, env, val_out);
 
         case SN_RTYPE_FN_EXPR:
-            sn_expr_eval_fn(expr, val_out);
+            *val_out = sn_null;
             return SN_SUCCESS;
 
         case SN_EXPR_TYPE_INVALID:

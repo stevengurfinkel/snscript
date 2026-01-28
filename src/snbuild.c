@@ -223,12 +223,12 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     assert(proto->rtype == SN_RTYPE_CALL);
     sn_expr_t *name = proto->child_head;
 
-    sn_error_t status = sn_scope_add_var(parent_scope, name->sym, &expr->ref);
+    sn_error_t status = sn_scope_add_var(parent_scope, name->sym, &name->ref);
     if (status != SN_SUCCESS) {
         return sn_expr_error(name, status);
     }
 
-    sn_value_t *val = sn_scope_create_const(parent_scope, &expr->ref);
+    sn_value_t *val = sn_scope_create_const(parent_scope, &name->ref);
     val->type = SN_VALUE_TYPE_USER_FN;
     val->user_fn = func;
 

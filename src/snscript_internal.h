@@ -26,7 +26,14 @@ typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_func_st sn_func_t;
 typedef struct sn_scope_st sn_scope_t;
 typedef struct sn_const_st sn_const_t;
+typedef struct sn_env_st sn_env_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
+
+struct sn_env_st
+{
+    sn_value_t *globals;
+    sn_value_t *locals;
+};
 
 struct sn_value_st
 {
@@ -148,14 +155,13 @@ struct sn_program_st
     sn_symbol_t *sn_if;
 
     sn_scope_t globals;
-    sn_value_t *global_values;
 };
 
 extern sn_value_t sn_null;
 
 sn_error_t sn_program_build(sn_program_t *prog);
 sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error);
-sn_error_t sn_expr_eval(sn_expr_t *expr, sn_value_t *val_out);
+sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out);
 
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);
