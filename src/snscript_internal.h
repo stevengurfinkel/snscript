@@ -25,6 +25,7 @@ typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_func_st sn_func_t;
 typedef struct sn_scope_st sn_scope_t;
+typedef struct sn_const_st sn_const_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 struct sn_value_st
@@ -83,10 +84,18 @@ typedef struct sn_ref_st
     int index;
 } sn_ref_t;
 
+struct sn_const_st
+{
+    sn_value_t value;
+    int idx;
+    sn_const_t *next;
+};
+
 struct sn_scope_st
 {
     sn_scope_type_t type;
     int idx_offset;
+    sn_const_t *head_const;
     sn_scope_t *parent;
     sn_symvec_t idxs;
 };
@@ -94,6 +103,7 @@ struct sn_scope_st
 struct sn_func_st
 {
     int param_count;
+    int locals_count; // includes parameters
     sn_scope_t scope;
     sn_symbol_t *name;
     sn_expr_t *body;
@@ -113,13 +123,6 @@ struct sn_expr_st
     sn_program_t *prog;
     int line;
     int col;
-};
-
-typedef struct sn_builtin_value_st sn_builtin_value_t;
-struct sn_builtin_value_st
-{
-    sn_value_t value;
-    sn_builtin_value_t *next;
 };
 
 struct sn_program_st
@@ -144,10 +147,6 @@ struct sn_program_st
     sn_symbol_t *sn_fn;
     sn_symbol_t *sn_if;
 
-    // bulitin functions, null
-    int builtin_count;
-    sn_builtin_value_t *builtin_head;
-
     sn_scope_t globals;
     sn_value_t *global_values;
 };
@@ -167,6 +166,8 @@ void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent);
 void sn_scope_deinit(sn_scope_t *scope);
 sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
 sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
+sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref);
+void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values);
 
 void sn_symvec_init(sn_symvec_t *symvec);
 int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);

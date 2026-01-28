@@ -5,6 +5,7 @@
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
 
 sn_error_t sn_expr_set_rtype(sn_expr_t *expr);
+sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope);
 
 sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
 {
@@ -170,12 +171,27 @@ sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
         return SN_ERROR_REDECLARED;
     }
 
-    if (ref != NULL) {
-        ref->scope = scope->type;
-        ref->index = idx + scope->idx_offset;
-    }
+    ref->scope = scope->type;
+    ref->index = idx + scope->idx_offset;
 
     return SN_SUCCESS;
+}
+
+sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref)
+{
+    sn_const_t *c = calloc(1, sizeof *c);
+    c->idx = ref->index;
+    c->next = scope->head_const;
+    scope->head_const = c;
+
+    return &c->value;
+}
+
+void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values)
+{
+    for (sn_const_t *c = scope->head_const; c != NULL; c = c->next) {
+        values[c->idx] = c->value;
+    }
 }
 
 sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
@@ -198,26 +214,46 @@ void sn_scope_deinit(sn_scope_t *scope)
     sn_symvec_deinit(&scope->idxs);
 }
 
-sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_func_t **func_out)
+sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
 {
     sn_func_t *func = calloc(sizeof *func, 1);
+    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
 
-    assert(expr->rtype == SN_RTYPE_FN_EXPR);
-
-    sn_expr_t *proto = expr->child_head;
+    sn_expr_t *proto = expr->child_head->next;
     assert(proto->rtype == SN_RTYPE_CALL);
+    sn_expr_t *name = proto->child_head;
 
-    func->name = proto->child_head->sym;
+    sn_error_t status = sn_scope_add_var(parent_scope, name->sym, &expr->ref);
+    if (status != SN_SUCCESS) {
+        return sn_expr_error(name, status);
+    }
+
+    sn_value_t *val = sn_scope_create_const(parent_scope, &expr->ref);
+    val->type = SN_VALUE_TYPE_USER_FN;
+    val->user_fn = func;
+
+    sn_scope_t scope = {0};
+    sn_scope_init(&scope, parent_scope);
 
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
+        status = sn_scope_add_var(&scope, param->sym, &param->ref);
+        if (status != SN_SUCCESS) {
+            return sn_expr_error(param, status);
+        }
+        assert(param->ref.index == func->param_count);
         func->param_count++;
     }
 
     func->body = proto->next;
-    assert(func->body != NULL);
 
+    for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
+        status = sn_expr_link_vars(expr, &scope);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
 
-    *func_out = func;
+    sn_scope_deinit(&scope);
     return SN_SUCCESS;
 }
 
@@ -238,16 +274,10 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope)
             return sn_expr_error(name, status);
         }
     }
-    else if (expr->rtype  == SN_RTYPE_FN_EXPR) {
-        assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
-
-        sn_expr_t *proto = expr->child_head->next;
-        assert(proto->rtype == SN_RTYPE_CALL);
-        sn_expr_t *name = proto->child_head;
-
-        sn_error_t status = sn_scope_add_var(scope, name->sym, &name->ref);
+    else if (expr->rtype == SN_RTYPE_FN_EXPR) {
+        sn_error_t status = sn_expr_create_fn(expr, scope);
         if (status != SN_SUCCESS) {
-            return sn_expr_error(name, status);
+            return status;
         }
     }
     else if (expr->rtype == SN_RTYPE_VAR) {
@@ -257,7 +287,7 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope)
         }
     }
 
-    if (expr->rtype != SN_RTYPE_LET_EXPR) {
+    if (expr->rtype != SN_RTYPE_LET_EXPR && expr->rtype != SN_RTYPE_FN_EXPR) {
         for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
             sn_error_t status = sn_expr_link_vars(child, scope);
             if (status != SN_SUCCESS) {

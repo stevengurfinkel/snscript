@@ -91,16 +91,12 @@ sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const 
 
 sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
 {
+    sn_ref_t ref = {0};
     sn_symbol_t *name = sn_program_default_symbol(prog, str);
-    sn_error_t status = sn_scope_add_var(&prog->globals, name, NULL);
+    sn_error_t status = sn_scope_add_var(&prog->globals, name, &ref);
     assert(status == SN_SUCCESS);
 
-    sn_builtin_value_t *bvalue = calloc(1, sizeof *bvalue);
-    bvalue->next = prog->builtin_head;
-    prog->builtin_head = bvalue;
-    prog->builtin_count++;
-
-    return &bvalue->value;
+    return sn_scope_create_const(&prog->globals, &ref);
 }
 
 void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn)

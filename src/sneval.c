@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include "snscript_internal.h"
 
 sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
@@ -10,18 +11,11 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
         return status;
     }
 
-    prog->global_values = alloca(prog->globals.idxs.count * sizeof prog->global_values[0]);
+    size_t bytes = prog->globals.idxs.count * sizeof prog->global_values[0];
+    prog->global_values = alloca(bytes);
+    memset(prog->global_values, '\0', bytes);
 
-    sn_builtin_value_t *bvalue = prog->builtin_head;
-    for (int i = 0; i < prog->builtin_count; i++) {
-        prog->global_values[prog->builtin_count - i - 1] = bvalue->value;
-        bvalue = bvalue->next;
-    }
-    assert(bvalue == NULL);
-
-    for (int i = prog->builtin_count; i < prog->globals.idxs.count; i++) {
-        prog->global_values[i] = sn_null;
-    }
+    sn_scope_init_consts(&prog->globals, prog->global_values);
 
     for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
         status = sn_expr_eval(expr, value_out);
@@ -41,23 +35,32 @@ void sn_program_lookup_ref(sn_program_t *prog, sn_ref_t *ref, sn_value_t *val_ou
 
 sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_value_t *val_out)
 {
-    sn_error_t status = SN_SUCCESS;
-    sn_value_t *values = alloca(expr->child_count * sizeof values[0]);
+    sn_value_t fn_value = {0};
     sn_expr_t *child = expr->child_head;
+    sn_error_t status = sn_expr_eval(child, &fn_value);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
 
-    for (int i = 0; i < expr->child_count; i++) {
-        status = sn_expr_eval(child, &values[i]);
-        if (status != SN_SUCCESS) {
-            return status;
+    if (fn_value.type == SN_VALUE_TYPE_BUILTIN_FN) {
+        size_t args_size = sizeof (sn_value_t) * (expr->child_count - 1);
+        sn_value_t *args = alloca(args_size);
+        memset(args, '\0', args_size);
+
+        for (int i = 0; i < expr->child_count - 1; i++) {
+            child = child->next;
+            status = sn_expr_eval(child, &args[i]);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
         }
-        child = child->next;
+
+        return fn_value.builtin_fn(val_out, expr->child_count - 1, args);
+    }
+    else if (fn_value.type == SN_VALUE_TYPE_USER_FN) {
     }
 
-    if (values[0].type != SN_VALUE_TYPE_BUILTIN_FN) {
-        return SN_ERROR_CALLEE_NOT_A_FN;
-    }
-
-    return values->builtin_fn(val_out, expr->child_count - 1, values + 1);
+    return SN_ERROR_GENERIC;
 }
 
 sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_value_t *val_out)
@@ -73,6 +76,11 @@ sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_value_t *val_out)
 
     *val_out = sn_null;
     return sn_expr_eval(value, &prog->global_values[var->ref.index]);
+}
+
+void sn_expr_eval_fn(sn_expr_t *expr, sn_value_t *val_out)
+{
+    *val_out = expr->prog->global_values[expr->ref.index];
 }
 
 void sn_expr_eval_literal(sn_expr_t *expr, sn_value_t *val_out)
@@ -97,6 +105,10 @@ sn_error_t sn_expr_eval(sn_expr_t *expr, sn_value_t *val_out)
 
         case SN_RTYPE_LET_EXPR:
             return sn_expr_eval_let(expr, val_out);
+
+        case SN_RTYPE_FN_EXPR:
+            sn_expr_eval_fn(expr, val_out);
+            return SN_SUCCESS;
 
         case SN_EXPR_TYPE_INVALID:
         default:
