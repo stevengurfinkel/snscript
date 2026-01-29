@@ -12,7 +12,7 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     }
 
     sn_env_t env = {0};
-    size_t bytes = prog->globals.idxs.count * sizeof env.globals[0];
+    size_t bytes = prog->globals.decl_count * sizeof env.globals[0];
     env.globals = alloca(bytes);
     memset(env.globals, '\0', bytes);
 

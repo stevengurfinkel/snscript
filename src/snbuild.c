@@ -159,21 +159,19 @@ sn_scope_type_t sn_scope_type(sn_scope_t *scope)
     return scope->parent == NULL ? SN_SCOPE_TYPE_GLOBAL : SN_SCOPE_TYPE_LOCAL;
 }
 
-void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent)
-{
-    sn_symvec_init(&scope->idxs);
-    scope->parent = parent;
-}
-
 sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_expr_t *expr)
 {
-    int idx = sn_symvec_append(&scope->idxs, expr->sym);
-    if (idx < 0) {
+    sn_error_t status = sn_scope_find_var(scope, expr->sym, NULL);
+    if (status == SN_SUCCESS) {
         return SN_ERROR_REDECLARED;
     }
 
     expr->ref.type = sn_scope_type(scope);
-    expr->ref.index = idx;
+    expr->ref.index = scope->decl_count;
+
+    expr->next_decl = scope->decl_head;
+    scope->decl_head = expr;
+    scope->decl_count++;
 
     return SN_SUCCESS;
 }
@@ -197,22 +195,20 @@ void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values)
 
 sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
 {
-    while (scope != NULL) {
-        int idx = sn_symvec_idx(&scope->idxs, name);
-        if (idx >= 0) {
-            ref->type = sn_scope_type(scope);
-            ref->index = idx;
-            return SN_SUCCESS;
-        }
-        scope = scope->parent;
+    if (scope == NULL) {
+        return SN_ERROR_UNDECLARED;
     }
 
-    return SN_ERROR_UNDECLARED;
-}
+    for (sn_expr_t *decl = scope->decl_head; decl != NULL; decl = decl->next_decl) {
+        if (name == decl->sym) {
+            if (ref != NULL) {
+                *ref = decl->ref;
+            }
+            return SN_SUCCESS;
+        }
+    }
 
-void sn_scope_deinit(sn_scope_t *scope)
-{
-    sn_symvec_deinit(&scope->idxs);
+    return sn_scope_find_var(scope->parent, name, ref);
 }
 
 sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
@@ -233,8 +229,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     val->type = SN_VALUE_TYPE_USER_FN;
     val->user_fn = func;
 
-    sn_scope_t scope = {0};
-    sn_scope_init(&scope, parent_scope);
+    sn_scope_t scope = { .parent = parent_scope };
 
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
         status = sn_scope_add_var(&scope, param);
@@ -254,7 +249,6 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
         }
     }
 
-    sn_scope_deinit(&scope);
     return SN_SUCCESS;
 }
 

@@ -140,7 +140,6 @@ sn_error_t sn_program_create(sn_program_t **program_out, const char *source, siz
     prog->last = source + size;
 
     prog->symbol_tail = &prog->symbol_head;
-    sn_scope_init(&prog->globals, NULL);
     sn_program_add_default_symbols(prog);
 
     sn_error_t status = sn_program_parse(prog);
