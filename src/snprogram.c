@@ -89,14 +89,24 @@ sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const 
     return sn_program_add_symbol(prog, start, size);
 }
 
+sn_expr_t *sn_expr_create_builtin(sn_program_t *prog, sn_symbol_t *name)
+{
+    sn_expr_t *expr = calloc(1, sizeof *expr);
+    expr->type = SN_EXPR_TYPE_SYMBOL;
+    expr->rtype = SN_RTYPE_VAR;
+    expr->sym = name;
+    expr->prog = prog;
+    return expr;
+}
+
 sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
 {
-    sn_ref_t ref = {0};
     sn_symbol_t *name = sn_program_default_symbol(prog, str);
-    sn_error_t status = sn_scope_add_var(&prog->globals, name, &ref);
+    sn_expr_t *decl = sn_expr_create_builtin(prog, name);
+    sn_error_t status = sn_scope_add_var(&prog->globals, decl);
     assert(status == SN_SUCCESS);
 
-    return sn_scope_create_const(&prog->globals, &ref);
+    return sn_scope_create_const(&prog->globals, &decl->ref);
 }
 
 void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn)

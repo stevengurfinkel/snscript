@@ -103,6 +103,7 @@ struct sn_scope_st
     sn_const_t *head_const;
     sn_scope_t *parent;
     sn_symvec_t idxs;
+    sn_expr_t *decl_head;
 };
 
 struct sn_func_st
@@ -125,6 +126,7 @@ struct sn_expr_st
     sn_expr_t *next;
 
     sn_ref_t ref;
+    sn_expr_t *next_decl;
     sn_program_t *prog;
     int line;
     int col;
@@ -168,7 +170,7 @@ sn_error_t sn_program_parse(sn_program_t *prog);
 
 void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent);
 void sn_scope_deinit(sn_scope_t *scope);
-sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
+sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_expr_t *expr);
 sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
 sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref);
 void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values);

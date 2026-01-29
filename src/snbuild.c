@@ -165,15 +165,15 @@ void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent)
     scope->parent = parent;
 }
 
-sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
+sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_expr_t *expr)
 {
-    int idx = sn_symvec_append(&scope->idxs, name);
+    int idx = sn_symvec_append(&scope->idxs, expr->sym);
     if (idx < 0) {
         return SN_ERROR_REDECLARED;
     }
 
-    ref->type = sn_scope_type(scope);
-    ref->index = idx;
+    expr->ref.type = sn_scope_type(scope);
+    expr->ref.index = idx;
 
     return SN_SUCCESS;
 }
@@ -224,7 +224,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     assert(proto->rtype == SN_RTYPE_CALL);
     sn_expr_t *name = proto->child_head;
 
-    sn_error_t status = sn_scope_add_var(parent_scope, name->sym, &name->ref);
+    sn_error_t status = sn_scope_add_var(parent_scope, name);
     if (status != SN_SUCCESS) {
         return sn_expr_error(name, status);
     }
@@ -237,7 +237,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     sn_scope_init(&scope, parent_scope);
 
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
-        status = sn_scope_add_var(&scope, param->sym, &param->ref);
+        status = sn_scope_add_var(&scope, param);
         if (status != SN_SUCCESS) {
             return sn_expr_error(param, status);
         }
@@ -270,7 +270,7 @@ sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope)
             return status;
         }
 
-        status = sn_scope_add_var(scope, name->sym, &name->ref);
+        status = sn_scope_add_var(scope, name);
         if (status != SN_SUCCESS) {
             return sn_expr_error(name, status);
         }
