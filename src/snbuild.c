@@ -237,9 +237,9 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
         if (status != SN_SUCCESS) {
             return sn_expr_error(param, status);
         }
-        assert(param->ref.index == func->param_count);
         func->param_count++;
     }
+    assert(func->scope.decl_count == func->param_count);
 
     func->body = proto->next;
 

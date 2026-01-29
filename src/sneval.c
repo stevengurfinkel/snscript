@@ -34,6 +34,20 @@ sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
     return &env->locals[ref->index];
 }
 
+sn_error_t sn_call_eval_args(sn_expr_t *arg, int arg_count, sn_env_t *env, sn_value_t *args)
+{
+    for (int i = 0; i < arg_count; i++) {
+        sn_error_t status = sn_expr_eval(arg, env, &args[i]);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+        arg = arg->next;
+    }
+
+    assert(arg == NULL);
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     sn_value_t fn_value = {0};
@@ -50,12 +64,9 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
         sn_value_t *args = alloca(args_size);
         memset(args, '\0', args_size);
 
-        for (int i = 0; i < arg_count; i++) {
-            child = child->next;
-            status = sn_expr_eval(child, env, &args[i]);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
+        status = sn_call_eval_args(child->next, arg_count, env, args);
+        if (status != SN_SUCCESS) {
+            return status;
         }
 
         return fn_value.builtin_fn(val_out, arg_count, args);
@@ -65,6 +76,26 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
         if (arg_count != func->param_count) {
             return sn_expr_error(expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
         }
+
+        sn_env_t call_env = { env->globals };
+
+        size_t locals_size = sizeof (sn_value_t) * func->scope.decl_count;
+        call_env.locals = alloca(locals_size);
+        memset(call_env.locals, '\0', locals_size);
+
+        status = sn_call_eval_args(child->next, arg_count, env, call_env.locals);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+
+        for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
+            status = sn_expr_eval(expr, &call_env, val_out);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+        }
+
+        return SN_SUCCESS;
     }
 
     return SN_ERROR_GENERIC;

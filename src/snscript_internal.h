@@ -109,7 +109,6 @@ struct sn_scope_st
 struct sn_func_st
 {
     int param_count;
-    int locals_count; // includes parameters
     sn_scope_t scope;
     sn_symbol_t *name;
     sn_expr_t *body;
