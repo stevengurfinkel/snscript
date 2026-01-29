@@ -87,7 +87,7 @@ typedef enum sn_scope_type_en
 
 typedef struct sn_ref_st
 {
-    sn_scope_type_t scope;
+    sn_scope_type_t type;
     int index;
 } sn_ref_t;
 
@@ -100,8 +100,6 @@ struct sn_const_st
 
 struct sn_scope_st
 {
-    sn_scope_type_t type;
-    int idx_offset;
     sn_const_t *head_const;
     sn_scope_t *parent;
     sn_symvec_t idxs;

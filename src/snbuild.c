@@ -154,14 +154,15 @@ sn_error_t sn_expr_set_rtype(sn_expr_t *expr)
     return SN_ERROR_GENERIC;
 }
 
+sn_scope_type_t sn_scope_type(sn_scope_t *scope)
+{
+    return scope->parent == NULL ? SN_SCOPE_TYPE_GLOBAL : SN_SCOPE_TYPE_LOCAL;
+}
+
 void sn_scope_init(sn_scope_t *scope, sn_scope_t *parent)
 {
     sn_symvec_init(&scope->idxs);
     scope->parent = parent;
-    scope->type = (parent == NULL) ? SN_SCOPE_TYPE_GLOBAL : SN_SCOPE_TYPE_LOCAL;
-    if (parent && parent->type == SN_SCOPE_TYPE_LOCAL) {
-        scope->idx_offset = parent->idx_offset + parent->idxs.count;
-    }
 }
 
 sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
@@ -171,8 +172,8 @@ sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref)
         return SN_ERROR_REDECLARED;
     }
 
-    ref->scope = scope->type;
-    ref->index = idx + scope->idx_offset;
+    ref->type = sn_scope_type(scope);
+    ref->index = idx;
 
     return SN_SUCCESS;
 }
@@ -199,8 +200,8 @@ sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref
     while (scope != NULL) {
         int idx = sn_symvec_idx(&scope->idxs, name);
         if (idx >= 0) {
-            ref->scope = scope->type;
-            ref->index = idx + scope->idx_offset;
+            ref->type = sn_scope_type(scope);
+            ref->index = idx;
             return SN_SUCCESS;
         }
         scope = scope->parent;

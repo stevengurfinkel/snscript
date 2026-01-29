@@ -30,9 +30,9 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
 
 sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
 {
-    assert(ref->scope == SN_SCOPE_TYPE_GLOBAL || ref->scope == SN_SCOPE_TYPE_LOCAL);
+    assert(ref->type == SN_SCOPE_TYPE_GLOBAL || ref->type == SN_SCOPE_TYPE_LOCAL);
 
-    if (ref->scope == SN_SCOPE_TYPE_GLOBAL) {
+    if (ref->type == SN_SCOPE_TYPE_GLOBAL) {
         return &env->globals[ref->index];
     }
     return &env->locals[ref->index];
@@ -76,7 +76,7 @@ sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 
     assert(kw->rtype == SN_RTYPE_LET_KEYW);
     assert(var->rtype == SN_RTYPE_VAR);
-    assert(var->ref.scope == SN_SCOPE_TYPE_GLOBAL);
+    assert(var->ref.type == SN_SCOPE_TYPE_GLOBAL);
 
     *val_out = sn_null;
     return sn_expr_eval(value, env, sn_env_lookup_ref(env, &var->ref));
