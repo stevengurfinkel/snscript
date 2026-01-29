@@ -6,11 +6,7 @@
 sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
 {
     *value_out = sn_null;
-    sn_error_t status = sn_program_build(prog);
-    if (status != SN_SUCCESS) {
-        return status;
-    }
-
+    sn_error_t status = SN_SUCCESS;
     sn_env_t env = {0};
     size_t bytes = prog->globals.decl_count * sizeof env.globals[0];
     env.globals = alloca(bytes);
@@ -47,12 +43,14 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
         return status;
     }
 
+    int arg_count = expr->child_count - 1;
+
     if (fn_value.type == SN_VALUE_TYPE_BUILTIN_FN) {
-        size_t args_size = sizeof (sn_value_t) * (expr->child_count - 1);
+        size_t args_size = sizeof (sn_value_t) * arg_count;
         sn_value_t *args = alloca(args_size);
         memset(args, '\0', args_size);
 
-        for (int i = 0; i < expr->child_count - 1; i++) {
+        for (int i = 0; i < arg_count; i++) {
             child = child->next;
             status = sn_expr_eval(child, env, &args[i]);
             if (status != SN_SUCCESS) {
@@ -60,9 +58,13 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
             }
         }
 
-        return fn_value.builtin_fn(val_out, expr->child_count - 1, args);
+        return fn_value.builtin_fn(val_out, arg_count, args);
     }
     else if (fn_value.type == SN_VALUE_TYPE_USER_FN) {
+        sn_func_t *func = fn_value.user_fn;
+        if (arg_count != func->param_count) {
+            return sn_expr_error(expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
+        }
     }
 
     return SN_ERROR_GENERIC;

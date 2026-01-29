@@ -446,6 +446,7 @@ void test_eval_literal(void)
     char *src = "123\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT_EQ(ival(val), 123);
@@ -453,6 +454,7 @@ void test_eval_literal(void)
 
     src = "-123\n";
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT_EQ(ival(val), -123);
     sn_value_destroy(val);
@@ -464,6 +466,7 @@ void test_eval_sum(void)
     char *src = "(+ 1 2 3)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT_EQ(ival(val), 6);
@@ -471,6 +474,7 @@ void test_eval_sum(void)
 
     src = "{10 - 5}\n";
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT_EQ(ival(val), 5);
     sn_value_destroy(val);
@@ -482,6 +486,7 @@ void test_eval_nested(void)
     char *src = "(+ 1 2 3 (- -4))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT_EQ(ival(val), 10);
@@ -496,6 +501,7 @@ void test_variable(void)
                 "(+ x y)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT_EQ(ival(val), 25);
@@ -508,6 +514,7 @@ void test_null(void)
     char *src = "null\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT(sn_value_is_null(val));
@@ -520,6 +527,7 @@ void test_println(void)
     char *src = "(println (+ 0 1) (+ 1 1) (+ 1 2))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
     ASSERT_OK(sn_program_run(prog, val));
     ASSERT(sn_value_is_null(val));
@@ -696,6 +704,43 @@ void test_build_error(void)
                 "(if (let a 0) null 1)\n");
 }
 
+sn_value_t *
+error_run(sn_error_t err_code,
+          int err_line,
+          int err_col,
+          const char *err_sym,
+          const char *src)
+{
+    sn_value_t *value = sn_value_create();
+    sn_program_t *prog = NULL;
+    ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
+    sn_error_t status = sn_program_run(prog, value);
+    if (status != err_code) {
+        fprintf(stderr, "sn_program_run returned %s\n", sn_error_str(status));
+        abort();
+    }
+    if (err_code != SN_SUCCESS) {
+        error_check(prog, err_line, err_col, err_sym);
+    }
+    sn_program_destroy(prog);
+    return value;
+}
+
+void test_run_error()
+{
+    // wrong number of args to function
+    error_run(SN_ERROR_WRONG_ARG_COUNT_IN_CALL, 2, 1, NULL,
+              "(fn (foo a) null)\n"
+              "(foo)\n");
+
+    // wrong number of args to function
+    error_run(SN_ERROR_WRONG_ARG_COUNT_IN_CALL, 2, 1, NULL,
+              "(fn (foo) null)\n"
+              "(foo 1)\n");
+
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -728,6 +773,7 @@ int main(int argc, char **argv)
     test_println();
     test_parse_error();
     test_build_error();
+    test_run_error();
     printf("PASSED\n");
     return 0;
 }

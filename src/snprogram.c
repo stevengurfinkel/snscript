@@ -31,6 +31,7 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(CALLEE_NOT_A_FN);
         SN_ERROR_CASE(INVALID_PARAMS_TO_FN);
         SN_ERROR_CASE(WRONG_VALUE_TYPE);
+        SN_ERROR_CASE(WRONG_ARG_COUNT_IN_CALL);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;

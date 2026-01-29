@@ -229,10 +229,11 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     val->type = SN_VALUE_TYPE_USER_FN;
     val->user_fn = func;
 
-    sn_scope_t scope = { .parent = parent_scope };
+    func->scope.parent = parent_scope;
 
+    // go through all of the parameters
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
-        status = sn_scope_add_var(&scope, param);
+        status = sn_scope_add_var(&func->scope, param);
         if (status != SN_SUCCESS) {
             return sn_expr_error(param, status);
         }
@@ -243,7 +244,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     func->body = proto->next;
 
     for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
-        status = sn_expr_link_vars(expr, &scope);
+        status = sn_expr_link_vars(expr, &func->scope);
         if (status != SN_SUCCESS) {
             return status;
         }

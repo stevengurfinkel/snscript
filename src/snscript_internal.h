@@ -159,7 +159,6 @@ struct sn_program_st
 
 extern sn_value_t sn_null;
 
-sn_error_t sn_program_build(sn_program_t *prog);
 sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error);
 sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out);
 
