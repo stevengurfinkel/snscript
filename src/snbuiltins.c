@@ -51,6 +51,9 @@ sn_error_t sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
             case SN_VALUE_TYPE_INTEGER:
                 printf("%ld", args[i].i);
                 break;
+            case SN_VALUE_TYPE_BOOLEAN:
+                printf("%s", args[i].i ? "true" : "false");
+                break;
             case SN_VALUE_TYPE_USER_FN:
                 printf("<user fn>");
                 break;

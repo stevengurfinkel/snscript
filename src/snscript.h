@@ -45,4 +45,5 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out);
 sn_value_t *sn_value_create(void);
 void sn_value_destroy(sn_value_t *value);
 sn_error_t sn_value_as_integer(sn_value_t *value, int64_t *i_out);
+sn_error_t sn_value_as_boolean(sn_value_t *value, bool *b_out);
 bool sn_value_is_null(sn_value_t *value);

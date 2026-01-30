@@ -17,6 +17,7 @@ typedef enum sn_value_type_en
     SN_VALUE_TYPE_INVALID,
     SN_VALUE_TYPE_NULL,
     SN_VALUE_TYPE_INTEGER,
+    SN_VALUE_TYPE_BOOLEAN,
     SN_VALUE_TYPE_USER_FN,
     SN_VALUE_TYPE_BUILTIN_FN,
 } sn_value_type_t;

@@ -440,6 +440,13 @@ int64_t ival(sn_value_t *v)
     return i;
 }
 
+bool bval(sn_value_t *v)
+{
+    bool b = false;
+    ASSERT_OK(sn_value_as_boolean(v, &b));
+    return b;
+}
+
 void test_eval_literal(void)
 {
     char *src = "123\n";
@@ -740,10 +747,15 @@ void test_run_error()
 
 }
 
+sn_value_t *check_run(const char *str)
+{
+    return error_run(SN_SUCCESS, 0, 0, NULL, str);
+}
+
 void test_run_func()
 {
     // nested functions
-    sn_value_t *val = error_run(SN_SUCCESS, 0, 0, NULL,
+    sn_value_t *val = check_run(
         "(let three 3)\n"
         "(fn (double x)\n"
         "  (+ x x))\n"
@@ -754,7 +766,7 @@ void test_run_func()
     ASSERT_EQ(ival(val), 9);
 
     // local scope is separate
-    val = error_run(SN_SUCCESS, 0, 0, NULL,
+    val = check_run(
         "(let x 3)\n"
         "(fn (double x)\n"
         "  (+ x x))\n"
@@ -763,7 +775,7 @@ void test_run_func()
     ASSERT_EQ(ival(val), 6);
 
     // local let
-    val = error_run(SN_SUCCESS, 0, 0, NULL,
+    val = check_run(
         "(let z 3)\n"
         "(fn (inc x)\n"
         "  (let z 2)\n"
@@ -771,6 +783,12 @@ void test_run_func()
         "  (+ x y z))\n"
         "(inc z)\n");
     ASSERT_EQ(ival(val), 4);
+
+    val = check_run("true");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("false");
+    ASSERT_EQ(bval(val), false);
 }
 
 int main(int argc, char **argv)

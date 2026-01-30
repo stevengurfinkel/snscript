@@ -27,6 +27,16 @@ sn_error_t sn_value_as_integer(sn_value_t *value, int64_t *i_out)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_value_as_boolean(sn_value_t *value, bool *b_out)
+{
+    if (value->type != SN_VALUE_TYPE_BOOLEAN) {
+        return SN_ERROR_WRONG_VALUE_TYPE;
+    }
+
+    *b_out = value->i;
+    return SN_SUCCESS;
+}
+
 bool sn_value_is_null(sn_value_t *value)
 {
     return value->type == SN_VALUE_TYPE_NULL;
