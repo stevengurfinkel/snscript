@@ -761,6 +761,16 @@ void test_run_func()
         "(double x)\n");
 
     ASSERT_EQ(ival(val), 6);
+
+    // local let
+    val = error_run(SN_SUCCESS, 0, 0, NULL,
+        "(let z 3)\n"
+        "(fn (inc x)\n"
+        "  (let z 2)\n"
+        "  (let y -1)\n"
+        "  (+ x y z))\n"
+        "(inc z)\n");
+    ASSERT_EQ(ival(val), 4);
 }
 
 int main(int argc, char **argv)

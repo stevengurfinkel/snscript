@@ -109,7 +109,6 @@ sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 
     assert(kw->rtype == SN_RTYPE_LET_KEYW);
     assert(var->rtype == SN_RTYPE_VAR);
-    assert(var->ref.type == SN_SCOPE_TYPE_GLOBAL);
 
     *val_out = sn_null;
     return sn_expr_eval(value, env, sn_env_lookup_ref(env, &var->ref));
