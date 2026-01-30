@@ -742,6 +742,7 @@ void test_run_error()
 
 void test_run_func()
 {
+    // nested functions
     sn_value_t *val = error_run(SN_SUCCESS, 0, 0, NULL,
         "(let three 3)\n"
         "(fn (double x)\n"
@@ -751,6 +752,15 @@ void test_run_func()
         "(triple three)\n");
 
     ASSERT_EQ(ival(val), 9);
+
+    // local scope is separate
+    val = error_run(SN_SUCCESS, 0, 0, NULL,
+        "(let x 3)\n"
+        "(fn (double x)\n"
+        "  (+ x x))\n"
+        "(double x)\n");
+
+    ASSERT_EQ(ival(val), 6);
 }
 
 int main(int argc, char **argv)
