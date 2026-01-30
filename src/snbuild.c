@@ -5,7 +5,7 @@
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
 
 sn_error_t sn_expr_set_rtype(sn_expr_t *expr);
-sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope);
+sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope);
 
 sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
 {
@@ -236,6 +236,18 @@ sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref
     return SN_ERROR_UNDECLARED;
 }
 
+sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
+{
+    for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
+        sn_error_t status = sn_expr_build(child, scope);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
 {
     sn_func_t *func = calloc(sizeof *func, 1);
@@ -269,7 +281,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     func->body = proto->next;
 
     for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
-        status = sn_expr_link_vars(expr, &func->scope);
+        status = sn_expr_build(expr, &func->scope);
         if (status != SN_SUCCESS) {
             return status;
         }
@@ -278,46 +290,69 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     return SN_SUCCESS;
 }
 
-sn_error_t sn_expr_link_vars(sn_expr_t *expr, sn_scope_t *scope)
+sn_error_t sn_expr_build_let(sn_expr_t *expr, sn_scope_t *scope)
 {
-    if (expr->rtype == SN_RTYPE_LET_EXPR) {
-        assert(expr->child_head->rtype == SN_RTYPE_LET_KEYW);
+    assert(expr->child_head->rtype == SN_RTYPE_LET_KEYW);
 
-        sn_expr_t *name = expr->child_head->next;
+    sn_expr_t *name = expr->child_head->next;
 
-        sn_error_t status = sn_expr_link_vars(name->next, scope);
-        if (status != SN_SUCCESS) {
-            return status;
-        }
-
-        status = sn_scope_add_var(scope, name);
-        if (status != SN_SUCCESS) {
-            return sn_expr_error(name, status);
-        }
-    }
-    else if (expr->rtype == SN_RTYPE_FN_EXPR) {
-        sn_error_t status = sn_expr_create_fn(expr, scope);
-        if (status != SN_SUCCESS) {
-            return status;
-        }
-    }
-    else if (expr->rtype == SN_RTYPE_VAR) {
-        sn_error_t status = sn_scope_find_var(scope, expr->sym, &expr->ref);
-        if (status != SN_SUCCESS) {
-            return sn_expr_error(expr, status);
-        }
+    sn_error_t status = sn_expr_build(name->next, scope);
+    if (status != SN_SUCCESS) {
+        return status;
     }
 
-    if (expr->rtype != SN_RTYPE_LET_EXPR && expr->rtype != SN_RTYPE_FN_EXPR) {
-        for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
-            sn_error_t status = sn_expr_link_vars(child, scope);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-        }
+    status = sn_scope_add_var(scope, name);
+    if (status != SN_SUCCESS) {
+        return sn_expr_error(name, status);
     }
 
-    return SN_SUCCESS;
+    return status;
+}
+
+sn_error_t sn_expr_build_var(sn_expr_t *expr, sn_scope_t *scope)
+{
+    sn_error_t status = sn_scope_find_var(scope, expr->sym, &expr->ref);
+    if (status != SN_SUCCESS) {
+        return sn_expr_error(expr, status);
+    }
+
+    return status;
+}
+
+sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
+{
+    switch (expr->rtype) {
+        case SN_RTYPE_INVALID:
+            abort();
+            return SN_ERROR_GENERIC;
+
+        // just return success for terminals
+        case SN_RTYPE_LET_KEYW:
+        case SN_RTYPE_FN_KEYW:
+        case SN_RTYPE_IF_KEYW:
+        case SN_RTYPE_DO_KEYW:
+        case SN_RTYPE_LITERAL:
+            return SN_SUCCESS;
+
+        case SN_RTYPE_LET_EXPR:
+            return sn_expr_build_let(expr, scope);
+
+        case SN_RTYPE_FN_EXPR:
+            return sn_expr_create_fn(expr, scope);
+
+        case SN_RTYPE_IF_EXPR:
+        case SN_RTYPE_DO_EXPR:
+            return sn_expr_build_children(expr, scope);
+
+        case SN_RTYPE_VAR:
+            return sn_expr_build_var(expr, scope);
+
+        case SN_RTYPE_CALL:
+        case SN_RTYPE_PROGRAM:
+            return sn_expr_build_children(expr, scope);
+    }
+
+    return SN_ERROR_GENERIC;
 }
 
 sn_error_t sn_program_build(sn_program_t *prog)
@@ -326,5 +361,5 @@ sn_error_t sn_program_build(sn_program_t *prog)
     if (status != SN_SUCCESS) {
         return status;
     }
-    return sn_expr_link_vars(&prog->expr, &prog->globals);
+    return sn_expr_build(&prog->expr, &prog->globals);
 }

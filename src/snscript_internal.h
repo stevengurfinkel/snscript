@@ -84,6 +84,7 @@ typedef struct sn_symvec_st
 
 typedef enum sn_scope_type_en
 {
+    SN_SCOPE_TYPE_INVALID,
     SN_SCOPE_TYPE_GLOBAL,
     SN_SCOPE_TYPE_LOCAL,
 } sn_scope_type_t;
