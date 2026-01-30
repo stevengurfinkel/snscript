@@ -21,6 +21,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     else if (sym == prog->sn_fn) {
         expr->rtype = SN_RTYPE_FN_KEYW;
     }
+    else if (sym == prog->sn_do) {
+        expr->rtype = SN_RTYPE_DO_KEYW;
+    }
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
@@ -56,6 +59,15 @@ sn_error_t sn_fn_expr_check(sn_expr_t *expr)
         if (var->rtype != SN_RTYPE_VAR) {
             return sn_expr_error(expr, SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS);
         }
+    }
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_do_expr_check(sn_expr_t *expr)
+{
+    if (expr->child_count < 2) {
+        return sn_expr_error(expr, SN_ERROR_DO_EXPR_TOO_SHORT);
     }
 
     return SN_SUCCESS;
@@ -115,9 +127,17 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
                 return status;
             }
             break;
+        case SN_RTYPE_DO_KEYW:
+            expr->rtype = SN_RTYPE_DO_EXPR;
+            status = sn_do_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+            break;
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
+        case SN_RTYPE_DO_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:

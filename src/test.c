@@ -708,6 +708,15 @@ void test_build_error(void)
 
     error_build(SN_ERROR_NESTED_LET_EXPR, 1, 5, NULL,
                 "(if (let a 0) null 1)\n");
+
+    // do block - too short
+    error_build(SN_ERROR_DO_EXPR_TOO_SHORT, 2, 3, NULL,
+                "(fn (main)\n"
+                "  (do))\n");
+    // ok
+    error_build(SN_SUCCESS, 0, 0, NULL,
+                "(fn (main)\n"
+                "  (do null))\n");
 }
 
 sn_value_t *

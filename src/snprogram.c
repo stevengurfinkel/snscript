@@ -20,6 +20,7 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(LET_EXPR_NOT_3_ITEMS);
         SN_ERROR_CASE(LET_EXPR_BAD_DEST);
         SN_ERROR_CASE(FN_EXPR_TOO_SHORT);
+        SN_ERROR_CASE(DO_EXPR_TOO_SHORT);
         SN_ERROR_CASE(FN_PROTO_NOT_LIST);
         SN_ERROR_CASE(FN_PROTO_COTAINS_NON_SYMBOLS);
         SN_ERROR_CASE(IF_EXPR_INVALID_LENGTH);
@@ -123,6 +124,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_let = sn_program_default_symbol(prog, "let");
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
     prog->sn_if = sn_program_default_symbol(prog, "if");
+    prog->sn_do = sn_program_default_symbol(prog, "do");
 
     // add global values
     sn_value_t *null = sn_program_add_builtin_value(prog, "null");
