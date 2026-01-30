@@ -186,4 +186,7 @@ sn_error_t sn_not(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_equals(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args);
+sn_error_t sn_mul(sn_value_t *ret, int arg_count, const sn_value_t *args);
+sn_error_t sn_div(sn_value_t *ret, int arg_count, const sn_value_t *args);
+sn_error_t sn_mod(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args);

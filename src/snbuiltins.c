@@ -148,6 +148,49 @@ sn_error_t sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_mul(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_INTEGER;
+    ret->i = 1;
+    for (int i = 0; i < arg_count; i++) {
+        if (args[i].type != SN_VALUE_TYPE_INTEGER) {
+            return SN_ERROR_WRONG_VALUE_TYPE;
+        }
+        ret->i *= args[i].i;
+    }
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_div(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_INTEGER;
+    if (arg_count != 2) {
+        return SN_ERROR_WRONG_ARG_COUNT_IN_CALL;
+    }
+
+    if (args[0].type != SN_VALUE_TYPE_INTEGER && args[1].type != SN_VALUE_TYPE_INTEGER) {
+        return SN_ERROR_WRONG_VALUE_TYPE;
+    }
+
+    ret->i = args[0].i / args[1].i;
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_mod(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_INTEGER;
+    if (arg_count != 2) {
+        return SN_ERROR_WRONG_ARG_COUNT_IN_CALL;
+    }
+
+    if (args[0].type != SN_VALUE_TYPE_INTEGER && args[1].type != SN_VALUE_TYPE_INTEGER) {
+        return SN_ERROR_WRONG_VALUE_TYPE;
+    }
+
+    ret->i = args[0].i % args[1].i;
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_println(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {
     ret->type = SN_VALUE_TYPE_NULL;

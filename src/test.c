@@ -968,6 +968,25 @@ void test_if(void)
     ASSERT_EQ(ival(val), 20);
 }
 
+void test_math(void)
+{
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  (* 2 3 4))\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 24);
+
+    val = check_run("(fn (main)\n"
+                    "  (/ 100 20))\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 5);
+
+    val = check_run("(fn (main)\n"
+                    "  (% 19 8))\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 3);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1005,6 +1024,7 @@ int main(int argc, char **argv)
     test_equals();
     test_type_queries();
     test_if();
+    test_math();
     printf("PASSED\n");
     return 0;
 }
