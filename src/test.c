@@ -987,6 +987,24 @@ void test_math(void)
     ASSERT_EQ(ival(val), 3);
 }
 
+void test_factorial(void)
+{
+    sn_value_t *val = NULL;
+    val = check_run("(fn (fact n)\n"
+                    "  (if {n == 0}\n"
+                    "     1\n"
+                    "     {n * (fact {n - 1})}))\n"
+                    "(fact 5)\n");
+    ASSERT_EQ(ival(val), 120);
+
+    val = check_run("(fn (fact n)\n"
+                    "  (if {n == 0}\n"
+                    "     1\n"
+                    "     {n * (fact {n - 1})}))\n"
+                    "(fact 10)\n");
+    ASSERT_EQ(ival(val), 3628800);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1025,6 +1043,7 @@ int main(int argc, char **argv)
     test_type_queries();
     test_if();
     test_math();
+    test_factorial();
     printf("PASSED\n");
     return 0;
 }
