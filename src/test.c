@@ -789,6 +789,56 @@ void test_run_func()
 
     val = check_run("false");
     ASSERT_EQ(bval(val), false);
+
+}
+
+void test_equals(void)
+{
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  {1 == 2})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a 12)\n"
+                    "  (let b 12)\n"
+                    "  {a == b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a +)\n"
+                    "  (let b +)\n"
+                    "  {a == b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a +)\n"
+                    "  (let b -)\n"
+                    "  {a == b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a main)\n"
+                    "  (let b main)\n"
+                    "  {a == b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a main)\n"
+                    "  (let b +)\n"
+                    "  {a == b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
+              "(fn (main)\n"
+              "  {0 == false})\n"
+              "(main)\n");
 }
 
 int main(int argc, char **argv)
@@ -825,6 +875,7 @@ int main(int argc, char **argv)
     test_build_error();
     test_run_error();
     test_run_func();
+    test_equals();
     printf("PASSED\n");
     return 0;
 }

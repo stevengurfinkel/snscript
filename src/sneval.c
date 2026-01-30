@@ -69,7 +69,10 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
             return status;
         }
 
-        return fn_value.builtin_fn(val_out, arg_count, args);
+        status = fn_value.builtin_fn(val_out, arg_count, args);
+        if (status != SN_SUCCESS) {
+            return sn_expr_error(expr, status);
+        }
     }
     else if (fn_value.type == SN_VALUE_TYPE_USER_FN) {
         sn_func_t *func = fn_value.user_fn;
@@ -94,11 +97,13 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
                 return status;
             }
         }
-
-        return SN_SUCCESS;
+    }
+    else {
+        abort();
+        return SN_ERROR_GENERIC;
     }
 
-    return SN_ERROR_GENERIC;
+    return SN_SUCCESS;
 }
 
 sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
