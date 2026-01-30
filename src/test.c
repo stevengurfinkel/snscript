@@ -835,6 +835,12 @@ void test_equals(void)
                     "(main)\n");
     ASSERT_EQ(bval(val), false);
 
+    val = check_run("(fn (main)\n"
+                    "  (let a ==)\n"
+                    "  {a a a})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
     error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
               "(fn (main)\n"
               "  {0 == false})\n"
