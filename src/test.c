@@ -847,6 +847,45 @@ void test_equals(void)
               "(main)\n");
 }
 
+void test_type_queries(void)
+{
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  (null? null))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (null? +))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (fn? fn?))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (fn? main))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (fn? true))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (int? 1234))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (int? fn?))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -882,6 +921,7 @@ int main(int argc, char **argv)
     test_run_error();
     test_run_func();
     test_equals();
+    test_type_queries();
     printf("PASSED\n");
     return 0;
 }

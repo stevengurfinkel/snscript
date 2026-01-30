@@ -6,6 +6,45 @@ sn_value_type_t sn_unified_type(sn_value_type_t type)
     return type == SN_VALUE_TYPE_BUILTIN_FN ? SN_VALUE_TYPE_USER_FN : type;
 }
 
+sn_error_t sn_is_int(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+    if (arg_count != 1) {
+        return SN_ERROR_WRONG_ARG_COUNT_IN_CALL;
+    }
+
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+    ret->i = (args[0].type == SN_VALUE_TYPE_INTEGER);
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_is_fn(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+    if (arg_count != 1) {
+        return SN_ERROR_WRONG_ARG_COUNT_IN_CALL;
+    }
+
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+    ret->i = (sn_unified_type(args[0].type) == SN_VALUE_TYPE_USER_FN);
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_is_null(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+    if (arg_count != 1) {
+        return SN_ERROR_WRONG_ARG_COUNT_IN_CALL;
+    }
+
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+    ret->i = (args[0].type == SN_VALUE_TYPE_NULL);
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_equals(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {
     ret->type = SN_VALUE_TYPE_BOOLEAN;
