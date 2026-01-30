@@ -128,11 +128,32 @@ void sn_expr_eval_literal(sn_expr_t *expr, sn_value_t *val_out)
 sn_error_t sn_expr_eval_if(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     sn_value_t cond = {0};
-    sn_error_t status = sn_expr_eval(expr->child_head, env, &cond);
+
+    sn_expr_t *check = expr->child_head->next;
+    sn_expr_t *true_arm = check->next;
+    sn_expr_t *false_arm = true_arm->next; // maybe NULL
+
+    sn_error_t status = sn_expr_eval(check, env, &cond);
     if (status != SN_SUCCESS) {
         return status;
     }
 
+    if (cond.type != SN_VALUE_TYPE_BOOLEAN) {
+        return sn_expr_error(check, SN_ERROR_WRONG_VALUE_TYPE);
+    }
+
+    // evaluate true arm
+    if (cond.i) {
+        return sn_expr_eval(true_arm, env, val_out);
+    }
+
+    // false arm present
+    if (false_arm != NULL) {
+        return sn_expr_eval(false_arm, env, val_out);
+    }
+
+    // false arm absent
+    *val_out = sn_null;
     return SN_SUCCESS;
 }
 

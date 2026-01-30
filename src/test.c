@@ -954,6 +954,20 @@ void test_type_queries(void)
     ASSERT_EQ(bval(val), false);
 }
 
+void test_if(void)
+{
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  (if (fn? main) 10 20))\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 10);
+
+    val = check_run("(fn (main)\n"
+                    "  (if (int? main) 10 20))\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 20);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -990,6 +1004,7 @@ int main(int argc, char **argv)
     test_run_func();
     test_equals();
     test_type_queries();
+    test_if();
     printf("PASSED\n");
     return 0;
 }
