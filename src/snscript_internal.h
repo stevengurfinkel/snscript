@@ -180,6 +180,9 @@ void sn_symvec_deinit(sn_symvec_t *symvec);
 sn_error_t sn_is_int(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_is_fn(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_is_null(sn_value_t *ret, int arg_count, const sn_value_t *args);
+
+sn_error_t sn_not_equals(sn_value_t *ret, int arg_count, const sn_value_t *args);
+sn_error_t sn_not(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_equals(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_sub(sn_value_t *ret, int arg_count, const sn_value_t *args);

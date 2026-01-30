@@ -845,6 +845,74 @@ void test_equals(void)
               "(fn (main)\n"
               "  {0 == false})\n"
               "(main)\n");
+
+    val = check_run("(fn (main)\n"
+                    "  {1 != 2})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a 12)\n"
+                    "  (let b 12)\n"
+                    "  {a != b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a +)\n"
+                    "  (let b +)\n"
+                    "  {a != b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a +)\n"
+                    "  (let b -)\n"
+                    "  {a != b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a main)\n"
+                    "  (let b main)\n"
+                    "  {a != b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a main)\n"
+                    "  (let b +)\n"
+                    "  {a != b})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a !=)\n"
+                    "  {a a a})\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
+              "(fn (main)\n"
+              "  {0 != false})\n"
+              "(main)\n");
+
+    val = check_run("(fn (main)\n"
+                    "  (! {1 == 2}))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = check_run("(fn (main)\n"
+                    "  (let a 12)\n"
+                    "  (let b 12)\n"
+                    "  (! {a == b}))\n"
+                    "(main)\n");
+    ASSERT_EQ(bval(val), false);
+
+    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
+              "(fn (main)\n"
+              "  (! null))\n"
+              "(main)\n");
 }
 
 void test_type_queries(void)

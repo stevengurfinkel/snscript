@@ -86,6 +86,33 @@ sn_error_t sn_equals(sn_value_t *ret, int arg_count, const sn_value_t *args)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_not_equals(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    sn_error_t status = sn_equals(ret, arg_count, args);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+
+    ret->i = !ret->i;
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_not(sn_value_t *ret, int arg_count, const sn_value_t *args)
+{
+    ret->type = SN_VALUE_TYPE_BOOLEAN;
+
+    if (arg_count != 1) {
+        return SN_ERROR_WRONG_ARG_COUNT_IN_CALL;
+    }
+
+    if (args[0].type != SN_VALUE_TYPE_BOOLEAN) {
+        return SN_ERROR_WRONG_VALUE_TYPE;
+    }
+
+    ret->i = !args[0].i;
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_add(sn_value_t *ret, int arg_count, const sn_value_t *args)
 {
     ret->type = SN_VALUE_TYPE_INTEGER;
