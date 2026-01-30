@@ -10,7 +10,6 @@
 #define ASSERT_NULL(x) ASSERT_EQ(x, NULL)
 #define ASSERT_OK(x) ASSERT_EQ(x, SN_SUCCESS)
 
-#define ASSERT_EQ_INT(x, y) ASSERT((x).type == SN_VALUE_TYPE_INTEGER && (x).i == (y))
 #define ASSERT_NULL_TYPE(x) ASSERT((x).type == SN_VALUE_TYPE_NULL)
 
 void test_prog_create_destroy(void)
@@ -741,6 +740,19 @@ void test_run_error()
 
 }
 
+void test_run_func()
+{
+    sn_value_t *val = error_run(SN_SUCCESS, 0, 0, NULL,
+        "(let three 3)\n"
+        "(fn (double x)\n"
+        "  (+ x x))\n"
+        "(fn (triple x)\n"
+        "  (+ (double x) x))\n"
+        "(triple three)\n");
+
+    ASSERT_EQ(ival(val), 9);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -774,6 +786,7 @@ int main(int argc, char **argv)
     test_parse_error();
     test_build_error();
     test_run_error();
+    test_run_func();
     printf("PASSED\n");
     return 0;
 }
