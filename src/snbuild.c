@@ -35,6 +35,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     else if (sym == prog->sn_and) {
         expr->rtype = SN_RTYPE_AND_KEYW;
     }
+    else if (sym == prog->sn_or) {
+        expr->rtype = SN_RTYPE_OR_KEYW;
+    }
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
@@ -186,6 +189,13 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
                 return status;
             }
             break;
+        case SN_RTYPE_OR_KEYW:
+            expr->rtype = SN_RTYPE_OR_EXPR;
+            status = sn_lazy_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+            break;
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
@@ -193,6 +203,7 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
         case SN_RTYPE_ASSIGN_EXPR:
         case SN_RTYPE_CONST_EXPR:
         case SN_RTYPE_AND_EXPR:
+        case SN_RTYPE_OR_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -392,6 +403,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_ASSIGN_KEYW:
         case SN_RTYPE_CONST_KEYW:
         case SN_RTYPE_AND_KEYW:
+        case SN_RTYPE_OR_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -414,6 +426,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
             return sn_expr_build_const(expr, scope);
 
         case SN_RTYPE_AND_EXPR:
+        case SN_RTYPE_OR_EXPR:
             return sn_expr_build_lazy(expr, scope);
 
         case SN_RTYPE_VAR:

@@ -129,6 +129,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_assign = sn_program_default_symbol(prog, "=");
     prog->sn_const = sn_program_default_symbol(prog, "const");
     prog->sn_and = sn_program_default_symbol(prog, "&&");
+    prog->sn_or = sn_program_default_symbol(prog, "||");
 
     // add global values
     *sn_program_add_builtin_value(prog, "null") = sn_null;
