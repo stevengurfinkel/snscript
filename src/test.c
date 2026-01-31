@@ -1120,6 +1120,37 @@ void test_const(void)
     ASSERT_EQ(ival(val), 124);
 }
 
+void test_and_or(void)
+{
+    error_build(SN_ERROR_LAZY_EXPR_TOO_SHORT, 2, 3, NULL,
+                "(fn (main)\n"
+                "  (&&))\n");
+
+    error_build(SN_ERROR_LAZY_EXPR_TOO_SHORT, 2, 3, NULL,
+                "(fn (main)\n"
+                "  (&& false))\n");
+
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  {true && true})\n"
+                    "(main)\n");
+    ASSERT(bval(val));
+
+    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 4, NULL,
+              "(fn (main)\n"
+              "  {1 && null})\n"
+              "(main)\n");
+
+    error_run(SN_ERROR_WRONG_VALUE_TYPE, 6, 7, "foo",
+              "(fn (main)\n"
+              "  (const foo 1)\n"
+              "  (&& true\n"
+              "      true\n"
+              "      (!= 1 0)\n"
+              "      foo))\n"
+              "(main)\n");
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1162,6 +1193,7 @@ int main(int argc, char **argv)
     test_do();
     test_assign();
     test_const();
+    test_and_or();
     printf("PASSED\n");
     return 0;
 }

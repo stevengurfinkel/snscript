@@ -59,6 +59,7 @@ typedef enum sn_rtype_st
     SN_RTYPE_DO_KEYW,
     SN_RTYPE_ASSIGN_KEYW,
     SN_RTYPE_CONST_KEYW,
+    SN_RTYPE_AND_KEYW,
 
     SN_RTYPE_LET_EXPR,
     SN_RTYPE_FN_EXPR,
@@ -66,6 +67,7 @@ typedef enum sn_rtype_st
     SN_RTYPE_DO_EXPR,
     SN_RTYPE_ASSIGN_EXPR,
     SN_RTYPE_CONST_EXPR,
+    SN_RTYPE_AND_EXPR,
 
     SN_RTYPE_VAR,
     SN_RTYPE_LITERAL,
@@ -168,11 +170,14 @@ struct sn_program_st
     sn_symbol_t *sn_do;
     sn_symbol_t *sn_assign;
     sn_symbol_t *sn_const;
+    sn_symbol_t *sn_and;
 
     sn_scope_t globals;
 };
 
 extern sn_value_t sn_null;
+extern sn_value_t sn_true;
+extern sn_value_t sn_false;
 
 sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error);
 sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out);

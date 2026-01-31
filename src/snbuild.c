@@ -3,6 +3,8 @@
 #include "snscript_internal.h"
 
 sn_value_t sn_null = { .type = SN_VALUE_TYPE_NULL };
+sn_value_t sn_false = { .type = SN_VALUE_TYPE_BOOLEAN, .i = false };
+sn_value_t sn_true = { .type = SN_VALUE_TYPE_BOOLEAN, .i = true };
 
 sn_error_t sn_expr_set_rtype(sn_expr_t *expr);
 sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope);
@@ -29,6 +31,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     }
     else if (sym == prog->sn_const) {
         expr->rtype = SN_RTYPE_CONST_KEYW;
+    }
+    else if (sym == prog->sn_and) {
+        expr->rtype = SN_RTYPE_AND_KEYW;
     }
     else {
         expr->rtype = SN_RTYPE_VAR;
@@ -84,6 +89,15 @@ sn_error_t sn_if_expr_check(sn_expr_t *expr)
 {
     if (expr->child_count != 3 && expr->child_count != 4) {
         return sn_expr_error(expr, SN_ERROR_IF_EXPR_INVALID_LENGTH);
+    }
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_lazy_expr_check(sn_expr_t *expr)
+{
+    if (expr->child_count < 3) {
+        return sn_expr_error(expr, SN_ERROR_LAZY_EXPR_TOO_SHORT);
     }
 
     return SN_SUCCESS;
@@ -165,12 +179,20 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
                 return status;
             }
             break;
+        case SN_RTYPE_AND_KEYW:
+            expr->rtype = SN_RTYPE_AND_EXPR;
+            status = sn_lazy_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+            break;
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
         case SN_RTYPE_DO_EXPR:
         case SN_RTYPE_ASSIGN_EXPR:
         case SN_RTYPE_CONST_EXPR:
+        case SN_RTYPE_AND_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -343,6 +365,17 @@ sn_error_t sn_expr_build_assign(sn_expr_t *expr, sn_scope_t *scope)
     return sn_expr_build(src, scope);
 }
 
+sn_error_t sn_expr_build_lazy(sn_expr_t *expr, sn_scope_t *scope)
+{
+    for (sn_expr_t *child = expr->child_head->next; child != NULL; child = child->next) {
+        sn_error_t status = sn_expr_build(child, scope);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    return SN_SUCCESS;
+}
 
 sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 {
@@ -358,6 +391,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_DO_KEYW:
         case SN_RTYPE_ASSIGN_KEYW:
         case SN_RTYPE_CONST_KEYW:
+        case SN_RTYPE_AND_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -378,6 +412,9 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 
         case SN_RTYPE_CONST_EXPR:
             return sn_expr_build_const(expr, scope);
+
+        case SN_RTYPE_AND_EXPR:
+            return sn_expr_build_lazy(expr, scope);
 
         case SN_RTYPE_VAR:
             return sn_expr_build_var(expr, scope);

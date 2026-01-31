@@ -178,6 +178,27 @@ sn_error_t sn_expr_eval_assign(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_o
     return sn_expr_eval(src, env, sn_env_lookup_ref(env, &dst->ref));
 }
 
+sn_error_t sn_expr_eval_and(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
+{
+    for (sn_expr_t *child = expr->child_head->next; child != NULL; child = child->next) {
+        sn_error_t status = sn_expr_eval(child, env, val_out);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+
+        if (val_out->type != SN_VALUE_TYPE_BOOLEAN) {
+            return sn_expr_error(child, SN_ERROR_WRONG_VALUE_TYPE);
+        }
+
+        // short-circuit
+        if (val_out->i == false) {
+            return SN_SUCCESS;
+        }
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     switch (expr->rtype) {
@@ -208,6 +229,9 @@ sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 
         case SN_RTYPE_ASSIGN_EXPR:
             return sn_expr_eval_assign(expr, env, val_out);
+
+        case SN_RTYPE_AND_EXPR:
+            return sn_expr_eval_and(expr, env, val_out);
 
         case SN_EXPR_TYPE_INVALID:
         default:

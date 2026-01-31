@@ -33,6 +33,7 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(INVALID_PARAMS_TO_FN);
         SN_ERROR_CASE(WRONG_VALUE_TYPE);
         SN_ERROR_CASE(WRONG_ARG_COUNT_IN_CALL);
+        SN_ERROR_CASE(LAZY_EXPR_TOO_SHORT);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;
@@ -127,18 +128,12 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_do = sn_program_default_symbol(prog, "do");
     prog->sn_assign = sn_program_default_symbol(prog, "=");
     prog->sn_const = sn_program_default_symbol(prog, "const");
+    prog->sn_and = sn_program_default_symbol(prog, "&&");
 
     // add global values
-    sn_value_t *null = sn_program_add_builtin_value(prog, "null");
-    null->type = SN_VALUE_TYPE_NULL;
-
-    sn_value_t *vtrue = sn_program_add_builtin_value(prog, "true");
-    vtrue->type = SN_VALUE_TYPE_BOOLEAN;
-    vtrue->i = true;
-
-    sn_value_t *vfalse = sn_program_add_builtin_value(prog, "false");
-    vfalse->type = SN_VALUE_TYPE_BOOLEAN;
-    vfalse->i = false;
+    *sn_program_add_builtin_value(prog, "null") = sn_null;
+    *sn_program_add_builtin_value(prog, "true") = sn_true;
+    *sn_program_add_builtin_value(prog, "false") = sn_false;
 
     sn_program_add_builtin_fn(prog, "int?", sn_is_int);
     sn_program_add_builtin_fn(prog, "fn?", sn_is_fn);
