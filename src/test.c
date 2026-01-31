@@ -617,11 +617,11 @@ error_build(sn_error_t err_code,
 
 void test_build_error(void)
 {
-    error_build(SN_ERROR_LET_EXPR_NOT_3_ITEMS, 2, 3, NULL,
+    error_build(SN_ERROR_EXPR_NOT_3_ITEMS, 2, 3, NULL,
                 "(let a 1)\n"
                 "  (let b a a)\n");
 
-    error_build(SN_ERROR_LET_EXPR_BAD_DEST, 3, 1, NULL,
+    error_build(SN_ERROR_EXPR_BAD_DEST, 3, 6, NULL,
                 "(let a 1)\n"
                 "(let b 2)\n"
                 "(let (+ a b) 3)\n");
@@ -1064,6 +1064,33 @@ void test_do(void)
     ASSERT_EQ(ival(val), 25);
 }
 
+void test_assign(void)
+{
+    error_build(SN_ERROR_UNDECLARED, 2, 4, "x",
+                "(fn (main)\n"
+                "  {x = 10})\n");
+
+    error_build(SN_ERROR_EXPR_BAD_DEST, 2, 4, NULL,
+                "(fn (main)\n"
+                "  {(+ 1 2) = 10})\n");
+
+
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  (let x 1)\n"
+                    "  {x = {x + 1}}\n"
+                    "  x)\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 2);
+
+    val = check_run("(fn (main)\n"
+                    "  (let x 1)\n"
+                    "  {x = {x + 1}}\n"
+                    "  x)\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 2);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1104,6 +1131,7 @@ int main(int argc, char **argv)
     test_math();
     test_factorial();
     test_do();
+    test_assign();
     printf("PASSED\n");
     return 0;
 }

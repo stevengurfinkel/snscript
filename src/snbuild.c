@@ -24,6 +24,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     else if (sym == prog->sn_do) {
         expr->rtype = SN_RTYPE_DO_KEYW;
     }
+    else if (sym == prog->sn_assign) {
+        expr->rtype = SN_RTYPE_ASSIGN_KEYW;
+    }
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
@@ -34,11 +37,12 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
 sn_error_t sn_let_expr_check(sn_expr_t *expr)
 {
     if (expr->child_count != 3) {
-        return sn_expr_error(expr, SN_ERROR_LET_EXPR_NOT_3_ITEMS);
+        return sn_expr_error(expr, SN_ERROR_EXPR_NOT_3_ITEMS);
     }
 
-    if (expr->child_head->next->rtype != SN_RTYPE_VAR) {
-        return sn_expr_error(expr, SN_ERROR_LET_EXPR_BAD_DEST);
+    sn_expr_t *dst = expr->child_head->next;
+    if (dst->rtype != SN_RTYPE_VAR) {
+        return sn_expr_error(dst, SN_ERROR_EXPR_BAD_DEST);
     }
 
     return SN_SUCCESS;
@@ -139,10 +143,18 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
                 return status;
             }
             break;
+        case SN_RTYPE_ASSIGN_KEYW:
+            expr->rtype = SN_RTYPE_ASSIGN_EXPR;
+            status = sn_let_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+            break;
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
         case SN_RTYPE_DO_EXPR:
+        case SN_RTYPE_ASSIGN_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -276,6 +288,20 @@ sn_error_t sn_expr_build_do(sn_expr_t *expr, sn_scope_t *scope)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_expr_build_assign(sn_expr_t *expr, sn_scope_t *scope)
+{
+    sn_expr_t *dst = expr->child_head->next;
+    sn_expr_t *src = dst->next;
+    assert(dst->rtype == SN_RTYPE_VAR);
+
+    sn_error_t status = sn_expr_build_var(dst, scope);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+
+    return sn_expr_build(src, scope);
+}
+
 sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 {
     switch (expr->rtype) {
@@ -288,6 +314,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_FN_KEYW:
         case SN_RTYPE_IF_KEYW:
         case SN_RTYPE_DO_KEYW:
+        case SN_RTYPE_ASSIGN_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -302,6 +329,9 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 
         case SN_RTYPE_DO_EXPR:
             return sn_expr_build_do(expr, scope);
+
+        case SN_RTYPE_ASSIGN_EXPR:
+            return sn_expr_build_assign(expr, scope);
 
         case SN_RTYPE_VAR:
             return sn_expr_build_var(expr, scope);

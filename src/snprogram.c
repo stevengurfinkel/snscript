@@ -17,8 +17,8 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(EXTRA_CHARS_AT_END_OF_INPUT);
         SN_ERROR_CASE(INVALID_INTEGER_LITERAL);
         SN_ERROR_CASE(INVALID_SYMBOL_NAME);
-        SN_ERROR_CASE(LET_EXPR_NOT_3_ITEMS);
-        SN_ERROR_CASE(LET_EXPR_BAD_DEST);
+        SN_ERROR_CASE(EXPR_NOT_3_ITEMS);
+        SN_ERROR_CASE(EXPR_BAD_DEST);
         SN_ERROR_CASE(FN_EXPR_TOO_SHORT);
         SN_ERROR_CASE(DO_EXPR_TOO_SHORT);
         SN_ERROR_CASE(FN_PROTO_NOT_LIST);
@@ -125,6 +125,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
     prog->sn_if = sn_program_default_symbol(prog, "if");
     prog->sn_do = sn_program_default_symbol(prog, "do");
+    prog->sn_assign = sn_program_default_symbol(prog, "=");
 
     // add global values
     sn_value_t *null = sn_program_add_builtin_value(prog, "null");
