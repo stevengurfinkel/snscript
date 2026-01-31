@@ -116,6 +116,64 @@ bool sn_rtype_allows_decl(sn_rtype_t type)
     return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_DO_EXPR;
 }
 
+sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t rtype)
+{
+    switch (rtype) {
+        case SN_RTYPE_PROGRAM:
+        case SN_RTYPE_INVALID:
+            abort();
+            break;
+
+        case SN_RTYPE_LET_KEYW:
+            expr->rtype = SN_RTYPE_LET_EXPR;
+            return sn_let_expr_check(expr);
+
+        case SN_RTYPE_FN_KEYW:
+            expr->rtype = SN_RTYPE_FN_EXPR;
+            return sn_fn_expr_check(expr);
+
+        case SN_RTYPE_IF_KEYW:
+            expr->rtype = SN_RTYPE_IF_EXPR;
+            return sn_if_expr_check(expr);
+
+        case SN_RTYPE_DO_KEYW:
+            expr->rtype = SN_RTYPE_DO_EXPR;
+            return sn_do_expr_check(expr);
+
+        case SN_RTYPE_ASSIGN_KEYW:
+            expr->rtype = SN_RTYPE_ASSIGN_EXPR;
+            return sn_let_expr_check(expr);
+
+        case SN_RTYPE_CONST_KEYW:
+            expr->rtype = SN_RTYPE_CONST_EXPR;
+            return sn_let_expr_check(expr);
+
+        case SN_RTYPE_AND_KEYW:
+            expr->rtype = SN_RTYPE_AND_EXPR;
+            return sn_lazy_expr_check(expr);
+
+        case SN_RTYPE_OR_KEYW:
+            expr->rtype = SN_RTYPE_OR_EXPR;
+            return sn_lazy_expr_check(expr);
+
+        case SN_RTYPE_LET_EXPR:
+        case SN_RTYPE_FN_EXPR:
+        case SN_RTYPE_IF_EXPR:
+        case SN_RTYPE_DO_EXPR:
+        case SN_RTYPE_ASSIGN_EXPR:
+        case SN_RTYPE_CONST_EXPR:
+        case SN_RTYPE_AND_EXPR:
+        case SN_RTYPE_OR_EXPR:
+        case SN_RTYPE_VAR:
+        case SN_RTYPE_LITERAL:
+        case SN_RTYPE_CALL:
+            expr->rtype = SN_RTYPE_CALL;
+            return SN_SUCCESS;
+    }
+
+    return SN_ERROR_GENERIC;
+}
+
 sn_error_t sn_list_set_rtype(sn_expr_t *expr)
 {
     sn_error_t status = SN_SUCCESS;
@@ -135,80 +193,9 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
         return sn_expr_error(expr, SN_ERROR_EMPTY_EXPR);
     }
 
-    switch (expr->child_head->rtype) {
-        case SN_RTYPE_PROGRAM:
-        case SN_RTYPE_INVALID:
-            abort();
-            break;
-        case SN_RTYPE_LET_KEYW:
-            expr->rtype = SN_RTYPE_LET_EXPR;
-            status = sn_let_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_FN_KEYW:
-            expr->rtype = SN_RTYPE_FN_EXPR;
-            status = sn_fn_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_IF_KEYW:
-            expr->rtype = SN_RTYPE_IF_EXPR;
-            status = sn_if_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_DO_KEYW:
-            expr->rtype = SN_RTYPE_DO_EXPR;
-            status = sn_do_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_ASSIGN_KEYW:
-            expr->rtype = SN_RTYPE_ASSIGN_EXPR;
-            status = sn_let_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_CONST_KEYW:
-            expr->rtype = SN_RTYPE_CONST_EXPR;
-            status = sn_let_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_AND_KEYW:
-            expr->rtype = SN_RTYPE_AND_EXPR;
-            status = sn_lazy_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_OR_KEYW:
-            expr->rtype = SN_RTYPE_OR_EXPR;
-            status = sn_lazy_expr_check(expr);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
-            break;
-        case SN_RTYPE_LET_EXPR:
-        case SN_RTYPE_FN_EXPR:
-        case SN_RTYPE_IF_EXPR:
-        case SN_RTYPE_DO_EXPR:
-        case SN_RTYPE_ASSIGN_EXPR:
-        case SN_RTYPE_CONST_EXPR:
-        case SN_RTYPE_AND_EXPR:
-        case SN_RTYPE_OR_EXPR:
-        case SN_RTYPE_VAR:
-        case SN_RTYPE_LITERAL:
-        case SN_RTYPE_CALL:
-            expr->rtype = SN_RTYPE_CALL;
-            break;
+    status = sn_list_set_rtype_from_first_child_rtype(expr, expr->child_head->rtype);
+    if (status != SN_SUCCESS) {
+        return status;
     }
 
     for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {

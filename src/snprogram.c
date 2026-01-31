@@ -121,7 +121,7 @@ void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_f
 
 void sn_program_add_default_symbols(sn_program_t *prog)
 {
-    // add keywords
+    // add special forms
     prog->sn_let = sn_program_default_symbol(prog, "let");
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
     prog->sn_if = sn_program_default_symbol(prog, "if");
