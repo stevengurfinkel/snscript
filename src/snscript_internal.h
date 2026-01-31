@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include "snscript.h"
 
+#define SN_MAX(a, b) ((a) > (b) ? (a) : (b))
+
 typedef enum sn_expr_type_en
 {
     SN_EXPR_TYPE_INVALID = 0,
@@ -28,6 +30,7 @@ typedef struct sn_func_st sn_func_t;
 typedef struct sn_scope_st sn_scope_t;
 typedef struct sn_const_st sn_const_t;
 typedef struct sn_env_st sn_env_t;
+typedef struct sn_block_st sn_block_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 struct sn_env_st
@@ -107,7 +110,15 @@ struct sn_scope_st
     sn_const_t *head_const;
     sn_scope_t *parent;
     sn_expr_t *decl_head;
-    int decl_count;
+    int cur_decl_count;
+    int max_decl_count;
+};
+
+struct sn_block_st
+{
+    sn_scope_t *scope;
+    sn_expr_t *parent;
+    sn_const_t *parent_const;
 };
 
 struct sn_func_st
@@ -175,6 +186,9 @@ sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_expr_t *expr);
 sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
 sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref);
 void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values);
+
+void sn_block_enter(sn_block_t *block, sn_scope_t *scope);
+void sn_block_leave(sn_block_t *block);
 
 void sn_symvec_init(sn_symvec_t *symvec);
 int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);

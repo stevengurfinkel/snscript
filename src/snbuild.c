@@ -214,7 +214,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
         }
         func->param_count++;
     }
-    assert(func->scope.decl_count == func->param_count);
+    assert(func->scope.cur_decl_count == func->param_count);
 
     func->body = proto->next;
 

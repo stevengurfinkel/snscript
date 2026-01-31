@@ -8,7 +8,7 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     *value_out = sn_null;
     sn_error_t status = SN_SUCCESS;
     sn_env_t env = {0};
-    size_t bytes = prog->globals.decl_count * sizeof env.globals[0];
+    size_t bytes = prog->globals.max_decl_count * sizeof env.globals[0];
     env.globals = alloca(bytes);
     memset(env.globals, '\0', bytes);
 
@@ -82,7 +82,7 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
 
         sn_env_t call_env = { env->globals };
 
-        size_t locals_size = sizeof (sn_value_t) * func->scope.decl_count;
+        size_t locals_size = sizeof (sn_value_t) * func->scope.max_decl_count;
         call_env.locals = alloca(locals_size);
         memset(call_env.locals, '\0', locals_size);
 
