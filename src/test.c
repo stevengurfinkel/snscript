@@ -1074,7 +1074,6 @@ void test_assign(void)
                 "(fn (main)\n"
                 "  {(+ 1 2) = 10})\n");
 
-
     sn_value_t *val = NULL;
     val = check_run("(fn (main)\n"
                     "  (let x 1)\n"
@@ -1085,10 +1084,11 @@ void test_assign(void)
 
     val = check_run("(fn (main)\n"
                     "  (let x 1)\n"
-                    "  {x = {x + 1}}\n"
+                    "  (do (let y 2)\n"
+                    "      {x = {x + y}})\n"
                     "  x)\n"
                     "(main)\n");
-    ASSERT_EQ(ival(val), 2);
+    ASSERT_EQ(ival(val), 3);
 }
 
 int main(int argc, char **argv)
