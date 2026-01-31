@@ -80,13 +80,6 @@ struct sn_symbol_st
     char value[];
 };
 
-typedef struct sn_symvec_st
-{
-    int capacity;
-    int count;
-    sn_symbol_t **names;
-} sn_symvec_t;
-
 typedef enum sn_scope_type_en
 {
     SN_SCOPE_TYPE_INVALID,
@@ -193,11 +186,6 @@ void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values);
 
 void sn_block_enter(sn_block_t *block, sn_scope_t *scope);
 void sn_block_leave(sn_block_t *block);
-
-void sn_symvec_init(sn_symvec_t *symvec);
-int sn_symvec_idx(sn_symvec_t *symvec, sn_symbol_t *name);
-int sn_symvec_append(sn_symvec_t *symvec, sn_symbol_t *name);
-void sn_symvec_deinit(sn_symvec_t *symvec);
 
 sn_error_t sn_is_int(sn_value_t *ret, int arg_count, const sn_value_t *args);
 sn_error_t sn_is_fn(sn_value_t *ret, int arg_count, const sn_value_t *args);
