@@ -1014,6 +1014,56 @@ void test_factorial(void)
     ASSERT_EQ(ival(val), 3628800);
 }
 
+void test_do(void)
+{
+    error_build(SN_ERROR_UNDECLARED, 4, 4, "x",
+                "(fn (main)\n"
+                "  (do\n"
+                "    (let x 10))\n"
+                "  {x + 1})\n");
+
+    error_build(SN_ERROR_REDECLARED, 2, 12, "arg",
+                "(fn (main arg)\n"
+                "  (do (let arg 0)))\n");
+
+    sn_value_t *val = NULL;
+    val = check_run("(fn (add10 x)\n"
+                    "  (do\n"
+                    "    (let y 10)\n"
+                    "    {x + y}))\n"
+                    "(add10 5)\n");
+    ASSERT_EQ(ival(val), 15);
+
+    val = check_run("(fn (add20 x)\n"
+                    "  (do\n"
+                    "    (let y 5)\n"
+                    "    (+ (do\n"
+                    "         (let z 15)\n"
+                    "         {x + z})\n"
+                    "       y)))\n"
+                    "(add20 10)\n");
+    ASSERT_EQ(ival(val), 30);
+
+    val = check_run("(fn (add20 x)\n"
+                    "  (do\n"
+                    "    (let y 5)\n"
+                    "    (+ (do\n"
+                    "         (let z 15)\n"
+                    "         (+ x y z)))))\n"
+                    "(add20 10)\n");
+    ASSERT_EQ(ival(val), 30);
+
+    val = check_run("(fn (times5 x)\n"
+                    "  (+ (do\n"
+                    "       (let x2 {x + x})\n"
+                    "       x2)\n"
+                    "     (do\n"
+                    "       (let x3 (+ x x x))\n"
+                    "       x3)))\n"
+                    "(times5 5)\n");
+    ASSERT_EQ(ival(val), 25);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1053,6 +1103,7 @@ int main(int argc, char **argv)
     test_if();
     test_math();
     test_factorial();
+    test_do();
     printf("PASSED\n");
     return 0;
 }

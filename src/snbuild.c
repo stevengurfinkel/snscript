@@ -82,6 +82,11 @@ sn_error_t sn_if_expr_check(sn_expr_t *expr)
     return SN_SUCCESS;
 }
 
+bool sn_rtype_allows_let(sn_rtype_t type)
+{
+    return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_DO_EXPR;
+}
+
 sn_error_t sn_list_set_rtype(sn_expr_t *expr)
 {
     sn_error_t status = SN_SUCCESS;
@@ -149,7 +154,7 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
         if (child->rtype == SN_RTYPE_FN_EXPR) {
             return sn_expr_error(child, SN_ERROR_NESTED_FN_EXPR);
         }
-        else if (child->rtype == SN_RTYPE_LET_EXPR && expr->rtype != SN_RTYPE_FN_EXPR) {
+        else if (child->rtype == SN_RTYPE_LET_EXPR && !sn_rtype_allows_let(expr->rtype)) {
             return sn_expr_error(child, SN_ERROR_NESTED_LET_EXPR);
         }
     }
@@ -257,6 +262,20 @@ sn_error_t sn_expr_build_var(sn_expr_t *expr, sn_scope_t *scope)
     return status;
 }
 
+sn_error_t sn_expr_build_do(sn_expr_t *expr, sn_scope_t *scope)
+{
+    sn_block_t block = {0};
+    sn_block_enter(&block, scope);
+
+    sn_error_t status = sn_expr_build_children(expr, scope);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+
+    sn_block_leave(&block);
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 {
     switch (expr->rtype) {
@@ -279,8 +298,10 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
             return sn_expr_create_fn(expr, scope);
 
         case SN_RTYPE_IF_EXPR:
-        case SN_RTYPE_DO_EXPR:
             return sn_expr_build_children(expr, scope);
+
+        case SN_RTYPE_DO_EXPR:
+            return sn_expr_build_do(expr, scope);
 
         case SN_RTYPE_VAR:
             return sn_expr_build_var(expr, scope);

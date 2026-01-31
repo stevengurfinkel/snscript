@@ -157,6 +157,18 @@ sn_error_t sn_expr_eval_if(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_expr_eval_do(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
+{
+    for (sn_expr_t *child = expr->child_head->next; child != NULL; child = child->next) {
+        sn_error_t status = sn_expr_eval(child, env, val_out);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     switch (expr->rtype) {
@@ -180,6 +192,9 @@ sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 
         case SN_RTYPE_IF_EXPR:
             return sn_expr_eval_if(expr, env, val_out);
+
+        case SN_RTYPE_DO_EXPR:
+            return sn_expr_eval_do(expr, env, val_out);
 
         case SN_EXPR_TYPE_INVALID:
         default:
