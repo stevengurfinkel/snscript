@@ -7,7 +7,7 @@ sn_scope_type_t sn_scope_type(sn_scope_t *scope)
     return scope->parent == NULL ? SN_SCOPE_TYPE_GLOBAL : SN_SCOPE_TYPE_LOCAL;
 }
 
-sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref)
+sn_value_t *sn_scope_create_const(sn_scope_t *scope, sn_ref_t *ref)
 {
     assert(scope->parent == NULL);
 
@@ -15,6 +15,8 @@ sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref)
     c->idx = ref->index;
     c->next = scope->head_const;
     scope->head_const = c;
+
+    ref->is_const = true;
 
     return &c->value;
 }

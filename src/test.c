@@ -1074,6 +1074,14 @@ void test_assign(void)
                 "(fn (main)\n"
                 "  {(+ 1 2) = 10})\n");
 
+    error_build(SN_ERROR_EXPR_BAD_DEST, 2, 4, "main",
+                "(fn (main)\n"
+                "  {main = 10})\n");
+
+    error_build(SN_ERROR_EXPR_BAD_DEST, 2, 4, "null",
+                "(fn (main)\n"
+                "  {null = null})\n");
+
     sn_value_t *val = NULL;
     val = check_run("(fn (main)\n"
                     "  (let x 1)\n"

@@ -98,6 +98,7 @@ typedef struct sn_ref_st
 {
     sn_scope_type_t type;
     int index;
+    bool is_const;
 } sn_ref_t;
 
 struct sn_const_st
@@ -187,7 +188,7 @@ sn_error_t sn_program_parse(sn_program_t *prog);
 
 sn_error_t sn_scope_add_var(sn_scope_t *scope, sn_expr_t *expr);
 sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref);
-sn_value_t *sn_scope_create_const(sn_scope_t *scope, const sn_ref_t *ref);
+sn_value_t *sn_scope_create_const(sn_scope_t *scope, sn_ref_t *ref);
 void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values);
 
 void sn_block_enter(sn_block_t *block, sn_scope_t *scope);

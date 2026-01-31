@@ -299,6 +299,10 @@ sn_error_t sn_expr_build_assign(sn_expr_t *expr, sn_scope_t *scope)
         return status;
     }
 
+    if (dst->ref.is_const) {
+        return sn_expr_error(dst, SN_ERROR_EXPR_BAD_DEST);
+    }
+
     return sn_expr_build(src, scope);
 }
 
