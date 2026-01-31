@@ -106,13 +106,13 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
     return SN_SUCCESS;
 }
 
-sn_error_t sn_expr_eval_let(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
+sn_error_t sn_expr_eval_decl(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     sn_expr_t *kw = expr->child_head;
     sn_expr_t *var = kw->next;
     sn_expr_t *value = var->next;
 
-    assert(kw->rtype == SN_RTYPE_LET_KEYW);
+    assert(kw->rtype == SN_RTYPE_LET_KEYW || kw->rtype == SN_RTYPE_CONST_KEYW);
     assert(var->rtype == SN_RTYPE_VAR);
 
     *val_out = sn_null;
@@ -193,7 +193,8 @@ sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
             return sn_expr_eval_call(expr, env, val_out);
 
         case SN_RTYPE_LET_EXPR:
-            return sn_expr_eval_let(expr, env, val_out);
+        case SN_RTYPE_CONST_EXPR:
+            return sn_expr_eval_decl(expr, env, val_out);
 
         case SN_RTYPE_FN_EXPR:
             *val_out = sn_null;

@@ -27,6 +27,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     else if (sym == prog->sn_assign) {
         expr->rtype = SN_RTYPE_ASSIGN_KEYW;
     }
+    else if (sym == prog->sn_const) {
+        expr->rtype = SN_RTYPE_CONST_KEYW;
+    }
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
@@ -86,7 +89,12 @@ sn_error_t sn_if_expr_check(sn_expr_t *expr)
     return SN_SUCCESS;
 }
 
-bool sn_rtype_allows_let(sn_rtype_t type)
+bool sn_rtype_is_decl(sn_rtype_t type)
+{
+    return type == SN_RTYPE_LET_EXPR || type == SN_RTYPE_CONST_EXPR;
+}
+
+bool sn_rtype_allows_decl(sn_rtype_t type)
 {
     return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_DO_EXPR;
 }
@@ -150,11 +158,19 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
                 return status;
             }
             break;
+        case SN_RTYPE_CONST_KEYW:
+            expr->rtype = SN_RTYPE_CONST_EXPR;
+            status = sn_let_expr_check(expr);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+            break;
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
         case SN_RTYPE_DO_EXPR:
         case SN_RTYPE_ASSIGN_EXPR:
+        case SN_RTYPE_CONST_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -166,7 +182,7 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
         if (child->rtype == SN_RTYPE_FN_EXPR) {
             return sn_expr_error(child, SN_ERROR_NESTED_FN_EXPR);
         }
-        else if (child->rtype == SN_RTYPE_LET_EXPR && !sn_rtype_allows_let(expr->rtype)) {
+        else if (sn_rtype_is_decl(child->rtype) && !sn_rtype_allows_decl(expr->rtype)) {
             return sn_expr_error(child, SN_ERROR_NESTED_LET_EXPR);
         }
     }
@@ -245,11 +261,15 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     return SN_SUCCESS;
 }
 
-sn_error_t sn_expr_build_let(sn_expr_t *expr, sn_scope_t *scope)
+sn_error_t sn_expr_build_decl(sn_expr_t *expr, sn_scope_t *scope, sn_expr_t **name_out)
 {
-    assert(expr->child_head->rtype == SN_RTYPE_LET_KEYW);
+    sn_expr_t *keyw = expr->child_head;
+    assert(keyw->rtype == SN_RTYPE_LET_KEYW || keyw->rtype == SN_RTYPE_CONST_KEYW);
 
-    sn_expr_t *name = expr->child_head->next;
+    sn_expr_t *name = keyw->next;
+    if (name_out != NULL) {
+        *name_out = name;
+    }
 
     sn_error_t status = sn_expr_build(name->next, scope);
     if (status != SN_SUCCESS) {
@@ -262,6 +282,23 @@ sn_error_t sn_expr_build_let(sn_expr_t *expr, sn_scope_t *scope)
     }
 
     return status;
+}
+
+sn_error_t sn_expr_build_let(sn_expr_t *expr, sn_scope_t *scope)
+{
+    return sn_expr_build_decl(expr, scope, NULL);
+}
+
+sn_error_t sn_expr_build_const(sn_expr_t *expr, sn_scope_t *scope)
+{
+    sn_expr_t *name = NULL;
+    sn_error_t status = sn_expr_build_decl(expr, scope, &name);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+
+    name->ref.is_const = true;
+    return SN_SUCCESS;
 }
 
 sn_error_t sn_expr_build_var(sn_expr_t *expr, sn_scope_t *scope)
@@ -306,6 +343,7 @@ sn_error_t sn_expr_build_assign(sn_expr_t *expr, sn_scope_t *scope)
     return sn_expr_build(src, scope);
 }
 
+
 sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 {
     switch (expr->rtype) {
@@ -319,6 +357,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_IF_KEYW:
         case SN_RTYPE_DO_KEYW:
         case SN_RTYPE_ASSIGN_KEYW:
+        case SN_RTYPE_CONST_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -336,6 +375,9 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 
         case SN_RTYPE_ASSIGN_EXPR:
             return sn_expr_build_assign(expr, scope);
+
+        case SN_RTYPE_CONST_EXPR:
+            return sn_expr_build_const(expr, scope);
 
         case SN_RTYPE_VAR:
             return sn_expr_build_var(expr, scope);

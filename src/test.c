@@ -1099,6 +1099,27 @@ void test_assign(void)
     ASSERT_EQ(ival(val), 3);
 }
 
+void test_const(void)
+{
+    error_build(SN_ERROR_EXPR_BAD_DEST, 3, 4, "sym",
+                "(fn (main)\n"
+                "  (const sym 123)\n"
+                "  {sym = 456})\n");
+
+    error_build(SN_ERROR_NESTED_LET_EXPR, 2, 14, NULL,
+                "(fn (main)\n"
+                "  (if (null? (const sym 123))\n"
+                "     true\n"
+                "     false))\n");
+
+    sn_value_t *val = NULL;
+    val = check_run("(fn (main)\n"
+                    "  (const foo 123)\n"
+                    "  {foo + 1})\n"
+                    "(main)\n");
+    ASSERT_EQ(ival(val), 124);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1140,6 +1161,7 @@ int main(int argc, char **argv)
     test_factorial();
     test_do();
     test_assign();
+    test_const();
     printf("PASSED\n");
     return 0;
 }
