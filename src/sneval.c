@@ -3,24 +3,43 @@
 #include <string.h>
 #include "snscript_internal.h"
 
+sn_env_t *sn_env_create(sn_scope_t *scope, sn_env_t *parent)
+{
+    sn_env_t *env = NULL;
+    size_t bytes = sizeof *env + scope->max_decl_count * sizeof env->backing[0];
+    env = calloc(bytes, 1);
+
+    if (parent == NULL) {
+        env->globals = env->backing;
+    }
+    else {
+        env->globals = parent->globals;
+        env->locals = env->backing;
+    }
+
+    sn_scope_init_consts(scope, env->backing);
+    return env;
+}
+
+void sn_env_destroy(sn_env_t *env)
+{
+    free(env);
+}
+
 sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
 {
     *value_out = sn_null;
     sn_error_t status = SN_SUCCESS;
-    sn_env_t env = {0};
-    size_t bytes = prog->globals.max_decl_count * sizeof env.globals[0];
-    env.globals = alloca(bytes);
-    memset(env.globals, '\0', bytes);
-
-    sn_scope_init_consts(&prog->globals, env.globals);
+    sn_env_t *env = sn_env_create(&prog->globals, NULL);
 
     for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
-        status = sn_expr_eval(expr, &env, value_out);
+        status = sn_expr_eval(expr, env, value_out);
         if (status != SN_SUCCESS) {
             return status;
         }
     }
 
+    sn_env_destroy(env);
     return status;
 }
 
@@ -89,23 +108,21 @@ sn_error_t sn_expr_eval_call(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out
             return sn_expr_error(expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
         }
 
-        sn_env_t call_env = { env->globals };
+        sn_env_t *call_env = sn_env_create(&func->scope, env);
 
-        size_t locals_size = sizeof (sn_value_t) * func->scope.max_decl_count;
-        call_env.locals = alloca(locals_size);
-        memset(call_env.locals, '\0', locals_size);
-
-        status = sn_call_eval_args(child->next, arg_count, env, call_env.locals);
+        status = sn_call_eval_args(child->next, arg_count, env, call_env->locals);
         if (status != SN_SUCCESS) {
             return status;
         }
 
         for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
-            status = sn_expr_eval(expr, &call_env, val_out);
+            status = sn_expr_eval(expr, call_env, val_out);
             if (status != SN_SUCCESS) {
                 return status;
             }
         }
+
+        sn_env_destroy(call_env);
     }
     else {
         abort();

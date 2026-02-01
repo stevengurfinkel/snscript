@@ -33,12 +33,6 @@ typedef struct sn_env_st sn_env_t;
 typedef struct sn_block_st sn_block_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
-struct sn_env_st
-{
-    sn_value_t *globals;
-    sn_value_t *locals;
-};
-
 struct sn_value_st
 {
     sn_value_type_t type;
@@ -47,6 +41,13 @@ struct sn_value_st
         sn_func_t *user_fn;
         sn_builtin_fn_t builtin_fn;
     };
+};
+
+struct sn_env_st
+{
+    sn_value_t *globals;
+    sn_value_t *locals;
+    sn_value_t backing[];
 };
 
 typedef enum sn_rtype_st
