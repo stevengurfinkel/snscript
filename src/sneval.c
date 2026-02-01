@@ -24,6 +24,15 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     return status;
 }
 
+sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *value_out)
+{
+    if (prog->main_ref.type == SN_SCOPE_TYPE_INVALID) {
+        return SN_ERROR_MAIN_FN_MISSING;
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
 {
     assert(ref->type == SN_SCOPE_TYPE_GLOBAL || ref->type == SN_SCOPE_TYPE_LOCAL);

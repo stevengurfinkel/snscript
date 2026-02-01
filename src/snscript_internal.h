@@ -178,6 +178,10 @@ struct sn_program_st
     sn_symbol_t *sn_or;
     sn_symbol_t *sn_while;
 
+    // entry point to be defined by script
+    sn_symbol_t *sn_main;
+    sn_ref_t main_ref;
+
     sn_scope_t globals;
 };
 

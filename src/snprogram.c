@@ -30,6 +30,8 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(NESTED_LET_EXPR);
         SN_ERROR_CASE(UNDECLARED);
         SN_ERROR_CASE(REDECLARED);
+        SN_ERROR_CASE(GLOBAL_MAIN_NOT_FN);
+        SN_ERROR_CASE(MAIN_FN_MISSING);
         SN_ERROR_CASE(CALLEE_NOT_A_FN);
         SN_ERROR_CASE(INVALID_PARAMS_TO_FN);
         SN_ERROR_CASE(WRONG_VALUE_TYPE);
@@ -132,6 +134,10 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_and = sn_program_default_symbol(prog, "&&");
     prog->sn_or = sn_program_default_symbol(prog, "||");
     prog->sn_while = sn_program_default_symbol(prog, "while");
+
+    // entry point defined by script
+    prog->sn_main = sn_program_default_symbol(prog, "main");
+    prog->main_ref.type = SN_VALUE_TYPE_INVALID;
 
     // add global values
     *sn_program_add_builtin_value(prog, "null") = sn_null;

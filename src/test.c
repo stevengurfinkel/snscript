@@ -742,6 +742,30 @@ error_run(sn_error_t err_code,
     return value;
 }
 
+sn_value_t *
+error_run_main(sn_error_t err_code,
+              int err_line,
+              int err_col,
+              const char *err_sym,
+              sn_value_t *arg,
+              const char *src)
+{
+    sn_value_t *value = sn_value_create();
+    sn_program_t *prog = NULL;
+    ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
+    ASSERT_OK(sn_program_build(prog));
+    sn_error_t status = sn_program_run_main(prog, arg, value);
+    if (status != err_code) {
+        fprintf(stderr, "sn_program_run_main returned %s\n", sn_error_str(status));
+        abort();
+    }
+    if (err_code != SN_SUCCESS) {
+        error_check(prog, err_line, err_col, err_sym);
+    }
+    sn_program_destroy(prog);
+    return value;
+}
+
 void test_run_error()
 {
     // wrong number of args to function
@@ -1233,6 +1257,23 @@ void test_while(void)
     ASSERT_EQ(ival(val), 10);
 }
 
+void test_main(void)
+{
+    sn_value_t *arg = sn_value_create();
+    error_run_main(SN_ERROR_MAIN_FN_MISSING, 0, 0, NULL, arg,
+                   "(let x 0)\n"
+                   "(fn (foo) {x + 1})\n");
+
+    error_run_main(SN_ERROR_MAIN_FN_MISSING, 0, 0, NULL, arg,
+                   "(fn (foo)\n"
+                   "  (let main 0)\n"
+                   "  {main + main})\n");
+
+    error_build(SN_ERROR_GLOBAL_MAIN_NOT_FN, 1, 8, "main",
+                "(const main null)\n");
+    sn_value_destroy(arg);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1277,6 +1318,7 @@ int main(int argc, char **argv)
     test_const();
     test_and_or();
     test_while();
+    test_main();
     printf("PASSED\n");
     return 0;
 }

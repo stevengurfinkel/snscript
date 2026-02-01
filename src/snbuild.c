@@ -275,6 +275,11 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     val->type = SN_VALUE_TYPE_USER_FN;
     val->user_fn = func;
 
+    sn_program_t *prog = expr->prog;
+    if (name->sym == prog->sn_main && name->ref.type == SN_SCOPE_TYPE_GLOBAL) {
+        prog->main_ref = name->ref;
+    }
+
     func->scope.parent = parent_scope;
 
     // go through all of the parameters
@@ -317,6 +322,10 @@ sn_error_t sn_expr_build_decl(sn_expr_t *expr, sn_scope_t *scope, sn_expr_t **na
     status = sn_scope_add_var(scope, name);
     if (status != SN_SUCCESS) {
         return sn_expr_error(name, status);
+    }
+
+    if (name->ref.type == SN_SCOPE_TYPE_GLOBAL && name->sym == expr->prog->sn_main) {
+        return sn_expr_error(name, SN_ERROR_GLOBAL_MAIN_NOT_FN);
     }
 
     return status;

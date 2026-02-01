@@ -29,8 +29,10 @@ typedef enum sn_error_en
     SN_ERROR_NESTED_LET_EXPR,
     SN_ERROR_UNDECLARED,
     SN_ERROR_REDECLARED,
+    SN_ERROR_GLOBAL_MAIN_NOT_FN,
 
     // runtime errors
+    SN_ERROR_MAIN_FN_MISSING,
     SN_ERROR_CALLEE_NOT_A_FN,
     SN_ERROR_INVALID_PARAMS_TO_FN,
     SN_ERROR_WRONG_VALUE_TYPE,
@@ -49,9 +51,11 @@ sn_error_t sn_program_create(sn_program_t **program_out, const char *source, siz
 void sn_program_destroy(sn_program_t *prog);
 sn_error_t sn_program_build(sn_program_t *prog);
 sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out);
+sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *value_out);
 
 sn_value_t *sn_value_create(void);
 void sn_value_destroy(sn_value_t *value);
+void sn_value_set_integer(sn_value_t *value, int64_t i);
 sn_error_t sn_value_as_integer(sn_value_t *value, int64_t *i_out);
 sn_error_t sn_value_as_boolean(sn_value_t *value, bool *b_out);
 bool sn_value_is_null(sn_value_t *value);
