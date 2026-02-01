@@ -275,11 +275,6 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     val->type = SN_VALUE_TYPE_USER_FN;
     val->user_fn = func;
 
-    sn_program_t *prog = expr->prog;
-    if (name->sym == prog->sn_main && name->ref.type == SN_SCOPE_TYPE_GLOBAL) {
-        prog->main_ref = name->ref;
-    }
-
     func->scope.parent = parent_scope;
 
     // go through all of the parameters
@@ -291,6 +286,15 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
         func->param_count++;
     }
     assert(func->scope.cur_decl_count == func->param_count);
+
+    // if this is the main function, do some extra stuff
+    sn_program_t *prog = expr->prog;
+    if (name->sym == prog->sn_main && name->ref.type == SN_SCOPE_TYPE_GLOBAL) {
+        prog->main_ref = name->ref;
+        if (func->param_count > 1) {
+            return sn_expr_error(proto, SN_ERROR_TOO_MANY_PARAMS_FOR_MAIN_FN);
+        }
+    }
 
     func->body = proto->next;
 

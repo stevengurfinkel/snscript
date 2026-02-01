@@ -1271,6 +1271,11 @@ void test_main(void)
 
     error_build(SN_ERROR_GLOBAL_MAIN_NOT_FN, 1, 8, "main",
                 "(const main null)\n");
+
+
+    error_build(SN_ERROR_TOO_MANY_PARAMS_FOR_MAIN_FN, 1, 5, NULL,
+                "(fn (main a b) null)\n");
+
     sn_value_destroy(arg);
 }
 

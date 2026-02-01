@@ -30,6 +30,7 @@ typedef enum sn_error_en
     SN_ERROR_UNDECLARED,
     SN_ERROR_REDECLARED,
     SN_ERROR_GLOBAL_MAIN_NOT_FN,
+    SN_ERROR_TOO_MANY_PARAMS_FOR_MAIN_FN,
 
     // runtime errors
     SN_ERROR_MAIN_FN_MISSING,

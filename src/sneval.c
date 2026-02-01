@@ -43,15 +43,6 @@ sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
     return status;
 }
 
-sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *value_out)
-{
-    if (prog->main_ref.type == SN_SCOPE_TYPE_INVALID) {
-        return SN_ERROR_MAIN_FN_MISSING;
-    }
-
-    return SN_SUCCESS;
-}
-
 sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
 {
     assert(ref->type == SN_SCOPE_TYPE_GLOBAL || ref->type == SN_SCOPE_TYPE_LOCAL);
@@ -60,6 +51,51 @@ sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
         return &env->globals[ref->index];
     }
     return &env->locals[ref->index];
+}
+
+sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *value_out)
+{
+    *value_out = sn_null;
+    sn_error_t status = SN_SUCCESS;
+    sn_env_t *env = sn_env_create(&prog->globals, NULL);
+
+    for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
+        status = sn_expr_eval(expr, env, value_out);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    if (prog->main_ref.type == SN_SCOPE_TYPE_INVALID) {
+        return SN_ERROR_MAIN_FN_MISSING;
+    }
+
+    sn_value_t *main_val = sn_env_lookup_ref(env, &prog->main_ref);
+    assert(main_val->type == SN_VALUE_TYPE_USER_FN);
+    sn_func_t *func = main_val->user_fn;
+
+    sn_env_t *call_env = sn_env_create(&func->scope, env);
+
+    if (func->param_count == 1) {
+        if (arg != NULL) {
+            call_env->locals[0] = *arg;
+        }
+        else {
+            call_env->locals[0] = sn_null;
+        }
+    }
+
+    for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
+        status = sn_expr_eval(expr, call_env, value_out);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    sn_env_destroy(call_env);
+    sn_env_destroy(env);
+
+    return SN_SUCCESS;
 }
 
 sn_error_t sn_call_eval_args(sn_expr_t *arg, int arg_count, sn_env_t *env, sn_value_t *args)
