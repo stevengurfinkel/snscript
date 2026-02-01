@@ -1178,6 +1178,42 @@ void test_and_or(void)
               "(main)\n");
 }
 
+void test_while(void)
+{
+    error_build(SN_ERROR_WHILE_EXPR_TOO_SHORT, 2, 3, NULL,
+                "(fn (main)\n"
+                "  (while))\n");
+
+    sn_value_t *val = NULL;
+    val = check_run("(fn (double i)\n"
+                    "  (let result 0)\n"
+                    "  (while {i != 0}\n"
+                    "    {result = {result + 2}}\n"
+                    "    {i = {i - 1}})\n"
+                    "  result)\n"
+                    "(double 10)\n");
+    ASSERT_EQ(ival(val), 20);
+
+
+    val = check_run("(fn (double i)\n"
+                    "  (let result 0)\n"
+                    "  (while (do {result = {result + 2}}\n"
+                    "             {i = {i - 1}}\n"
+                    "             {i != 0}))\n"
+                    "  result)\n"
+                    "(double 20)\n");
+    ASSERT_EQ(ival(val), 40);
+
+    error_run(SN_ERROR_WRONG_VALUE_TYPE, 3, 10, NULL,
+              "(fn (double i)\n"
+              "  (let result 0)\n"
+              "  (while (do {result = {result + 2}}\n"
+              "             {i = {i - 1}}\n"
+              "             i))\n"
+              "  result)\n"
+              "(double 20)\n");
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1221,6 +1257,7 @@ int main(int argc, char **argv)
     test_assign();
     test_const();
     test_and_or();
+    test_while();
     printf("PASSED\n");
     return 0;
 }

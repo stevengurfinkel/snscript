@@ -21,6 +21,7 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(EXPR_BAD_DEST);
         SN_ERROR_CASE(FN_EXPR_TOO_SHORT);
         SN_ERROR_CASE(DO_EXPR_TOO_SHORT);
+        SN_ERROR_CASE(WHILE_EXPR_TOO_SHORT);
         SN_ERROR_CASE(FN_PROTO_NOT_LIST);
         SN_ERROR_CASE(FN_PROTO_COTAINS_NON_SYMBOLS);
         SN_ERROR_CASE(IF_EXPR_INVALID_LENGTH);
@@ -121,7 +122,7 @@ void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_f
 
 void sn_program_add_default_symbols(sn_program_t *prog)
 {
-    // add special forms
+    // add reserved symbols
     prog->sn_let = sn_program_default_symbol(prog, "let");
     prog->sn_fn = sn_program_default_symbol(prog, "fn");
     prog->sn_if = sn_program_default_symbol(prog, "if");
@@ -130,12 +131,14 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_const = sn_program_default_symbol(prog, "const");
     prog->sn_and = sn_program_default_symbol(prog, "&&");
     prog->sn_or = sn_program_default_symbol(prog, "||");
+    prog->sn_while = sn_program_default_symbol(prog, "while");
 
     // add global values
     *sn_program_add_builtin_value(prog, "null") = sn_null;
     *sn_program_add_builtin_value(prog, "true") = sn_true;
     *sn_program_add_builtin_value(prog, "false") = sn_false;
 
+    // add builtin functions
     sn_program_add_builtin_fn(prog, "int?", sn_is_int);
     sn_program_add_builtin_fn(prog, "fn?", sn_is_fn);
     sn_program_add_builtin_fn(prog, "null?", sn_is_null);

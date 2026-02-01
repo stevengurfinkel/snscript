@@ -220,6 +220,39 @@ sn_error_t sn_expr_eval_or(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_expr_eval_while(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
+{
+    sn_expr_t *cond_expr = expr->child_head->next;
+    sn_expr_t *body_start = cond_expr->next; // maybe null
+
+    *val_out = sn_null;
+
+    sn_value_t cond = { .type = SN_VALUE_TYPE_INVALID };
+    while (true) {
+        sn_error_t status = sn_expr_eval(cond_expr, env, &cond);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+
+        if (cond.type != SN_VALUE_TYPE_BOOLEAN) {
+            return sn_expr_error(cond_expr, SN_ERROR_WRONG_VALUE_TYPE);
+        }
+
+        if (!cond.i) {
+            break;
+        }
+
+        for (sn_expr_t *body = body_start; body != NULL; body = body->next) {
+            sn_error_t status = sn_expr_eval(body, env, val_out);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+        }
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 {
     switch (expr->rtype) {
@@ -256,6 +289,9 @@ sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out)
 
         case SN_RTYPE_OR_EXPR:
             return sn_expr_eval_or(expr, env, val_out);
+
+        case SN_RTYPE_WHILE_EXPR:
+            return sn_expr_eval_while(expr, env, val_out);
 
         case SN_EXPR_TYPE_INVALID:
         default:
