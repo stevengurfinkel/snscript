@@ -111,8 +111,8 @@ sn_error_t sn_lazy_expr_check(sn_expr_t *expr)
 
 sn_error_t sn_while_expr_check(sn_expr_t *expr)
 {
-    if (expr->child_count < 2) {
-        return sn_expr_error(expr, SN_ERROR_WHILE_EXPR_TOO_SHORT);
+    if (expr->child_count < 2 || expr->child_count > 3) {
+        return sn_expr_error(expr, SN_ERROR_WHILE_EXPR_WRONG_LENGTH);
     }
 
     return SN_SUCCESS;

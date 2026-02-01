@@ -1180,16 +1180,25 @@ void test_and_or(void)
 
 void test_while(void)
 {
-    error_build(SN_ERROR_WHILE_EXPR_TOO_SHORT, 2, 3, NULL,
+    error_build(SN_ERROR_WHILE_EXPR_WRONG_LENGTH, 2, 3, NULL,
                 "(fn (main)\n"
                 "  (while))\n");
+
+    error_build(SN_ERROR_WHILE_EXPR_WRONG_LENGTH, 2, 3, NULL,
+                "(fn (main)\n"
+                "  (while true null null))\n");
+
+    error_build(SN_ERROR_NESTED_LET_EXPR, 3, 5, NULL,
+                "(fn (main)\n"
+                "  (while true\n"
+                "    (let x 0)))\n");
 
     sn_value_t *val = NULL;
     val = check_run("(fn (double i)\n"
                     "  (let result 0)\n"
                     "  (while {i != 0}\n"
-                    "    {result = {result + 2}}\n"
-                    "    {i = {i - 1}})\n"
+                    "    (do {result = {result + 2}}\n"
+                    "        {i = {i - 1}}))\n"
                     "  result)\n"
                     "(double 10)\n");
     ASSERT_EQ(ival(val), 20);
@@ -1212,6 +1221,16 @@ void test_while(void)
               "             i))\n"
               "  result)\n"
               "(double 20)\n");
+
+    val = check_run("(fn (main count)\n"
+                    "  (let sum 0)\n"
+                    "  (let i 0)\n"
+                    "  (while {i != count} (do\n"
+                    "    {i = {i + 1}}\n"
+                    "    {sum = {sum + i}}))\n"
+                    "  sum)\n"
+                    "(main 4)\n");
+    ASSERT_EQ(ival(val), 10);
 }
 
 int main(int argc, char **argv)
