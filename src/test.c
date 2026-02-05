@@ -794,7 +794,6 @@ void test_run_func()
         "  (+ x x))\n"
         "(fn (triple x)\n"
         "  (+ (double x) x))\n"
-        "(triple three)\n"
         "(fn (main) (triple three))\n");
 
     ASSERT_EQ(ival(val), 9);
@@ -804,7 +803,6 @@ void test_run_func()
         "(let x 3)\n"
         "(fn (double x)\n"
         "  (+ x x))\n"
-        "(double x)\n"
         "(fn (main) (double x))\n");
 
     ASSERT_EQ(ival(val), 6);
@@ -980,8 +978,7 @@ void test_type_queries(void)
     ASSERT_EQ(bval(val), true);
 
     val = run_main(NULL,"(fn (main)\n"
-                    "  (int? fn?))\n"
-                    "(main)\n");
+                    "  (int? fn?))\n");
     ASSERT_EQ(bval(val), false);
 }
 

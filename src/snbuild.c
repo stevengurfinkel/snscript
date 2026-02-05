@@ -192,6 +192,13 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
     return SN_ERROR_GENERIC;
 }
 
+bool sn_rtype_only_in_fn(sn_rtype_t rtype)
+{
+    return rtype != SN_RTYPE_CONST_EXPR &&
+           rtype != SN_RTYPE_LET_EXPR &&
+           rtype != SN_RTYPE_FN_EXPR;
+}
+
 sn_error_t sn_list_set_rtype(sn_expr_t *expr)
 {
     sn_error_t status = SN_SUCCESS;
@@ -200,6 +207,10 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
         status = sn_expr_set_rtype(child);
         if (status != SN_SUCCESS) {
             return status;
+        }
+
+        if (expr->rtype == SN_RTYPE_PROGRAM && sn_rtype_only_in_fn(child->rtype)) {
+            return sn_expr_error(child, SN_ERROR_EXPR_OUTSIDE_OF_FN);
         }
     }
 
