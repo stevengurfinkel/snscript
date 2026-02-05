@@ -1222,43 +1222,51 @@ void test_while(void)
                 "  (while true\n"
                 "    (let x 0)))\n");
 
+    sn_value_t *arg = sn_value_create();
     sn_value_t *val = NULL;
-    val = check_run("(fn (double i)\n"
-                    "  (let result 0)\n"
-                    "  (while {i != 0}\n"
-                    "    (do {result = {result + 2}}\n"
-                    "        {i = {i - 1}}))\n"
-                    "  result)\n"
-                    "(double 10)\n");
+    val = run_main(arg,
+                   "(fn (double i)\n"
+                   "  (let result 0)\n"
+                   "  (while {i != 0}\n"
+                   "    (do {result = {result + 2}}\n"
+                   "        {i = {i - 1}}))\n"
+                   "  result)\n"
+                   "(fn (main) (double 10))\n");
     ASSERT_EQ(ival(val), 20);
 
 
-    val = check_run("(fn (double i)\n"
-                    "  (let result 0)\n"
-                    "  (while (do {result = {result + 2}}\n"
-                    "             {i = {i - 1}}\n"
-                    "             {i != 0}))\n"
-                    "  result)\n"
-                    "(double 20)\n");
+    sn_value_set_integer(arg, 20);
+    val = run_main(arg,
+                   "(fn (double i)\n"
+                   "  (let result 0)\n"
+                   "  (while (do {result = {result + 2}}\n"
+                   "             {i = {i - 1}}\n"
+                   "             {i != 0}))\n"
+                   "  result)\n"
+                   "(fn (main x)\n"
+                   "  (double x))\n");
     ASSERT_EQ(ival(val), 40);
 
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 3, 10, NULL,
-              "(fn (double i)\n"
-              "  (let result 0)\n"
-              "  (while (do {result = {result + 2}}\n"
-              "             {i = {i - 1}}\n"
-              "             i))\n"
-              "  result)\n"
-              "(double 20)\n");
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 3, 10, NULL, arg,
+                   "(fn (double i)\n"
+                   "  (let result 0)\n"
+                   "  (while (do {result = {result + 2}}\n"
+                   "             {i = {i - 1}}\n"
+                   "             i))\n"
+                   "  result)\n"
+                   "(fn (main)\n"
+                   "  (double 20))\n");
 
-    val = check_run("(fn (main count)\n"
-                    "  (let sum 0)\n"
-                    "  (let i 0)\n"
-                    "  (while {i != count} (do\n"
-                    "    {i = {i + 1}}\n"
-                    "    {sum = {sum + i}}))\n"
-                    "  sum)\n"
-                    "(main 4)\n");
+
+    sn_value_set_integer(arg, 4);
+    val = run_main(arg,
+                   "(fn (main count)\n"
+                   "  (let sum 0)\n"
+                   "  (let i 0)\n"
+                   "  (while {i != count} (do\n"
+                   "    {i = {i + 1}}\n"
+                   "    {sum = {sum + i}}))\n"
+                   "  sum)\n");
     ASSERT_EQ(ival(val), 10);
 }
 
