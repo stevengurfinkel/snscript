@@ -956,37 +956,37 @@ void test_equals(void)
 void test_type_queries(void)
 {
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  (null? null))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (null? null))\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (null? +))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                  "  (null? +))\n");
     ASSERT_EQ(bval(val), false);
 
-    val = check_run("(fn (main)\n"
-                    "  (fn? fn?))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                   "  (fn? fn?))\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (fn? main))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (fn? main))\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (fn? true))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                  "  (fn? true))\n");
     ASSERT_EQ(bval(val), false);
 
-    val = check_run("(fn (main)\n"
-                    "  (int? 1234))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                   "  (int? 1234))\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
+    val = run_main(NULL,"(fn (main)\n"
                     "  (int? fn?))\n"
                     "(main)\n");
     ASSERT_EQ(bval(val), false);
@@ -995,51 +995,52 @@ void test_type_queries(void)
 void test_if(void)
 {
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  (if (fn? main) 10 20))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (if (fn? main) 10 20))\n");
     ASSERT_EQ(ival(val), 10);
 
-    val = check_run("(fn (main)\n"
-                    "  (if (int? main) 10 20))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                  "  (if (int? main) 10 20))\n");
     ASSERT_EQ(ival(val), 20);
 }
 
 void test_math(void)
 {
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  (* 2 3 4))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (* 2 3 4))\n");
     ASSERT_EQ(ival(val), 24);
 
-    val = check_run("(fn (main)\n"
-                    "  (/ 100 20))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (/ 100 20))\n");
     ASSERT_EQ(ival(val), 5);
 
-    val = check_run("(fn (main)\n"
-                    "  (% 19 8))\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (% 19 8))\n");
     ASSERT_EQ(ival(val), 3);
 }
 
 void test_factorial(void)
 {
     sn_value_t *val = NULL;
-    val = check_run("(fn (fact n)\n"
-                    "  (if {n == 0}\n"
-                    "     1\n"
-                    "     {n * (fact {n - 1})}))\n"
-                    "(fact 5)\n");
+    sn_value_t *arg = sn_value_create();
+    sn_value_set_integer(arg, 5);
+    const char *src = "(fn (fact n)\n"
+                      "  (if {n == 0}\n"
+                      "     1\n"
+                      "     {n * (fact {n - 1})}))\n"
+                      "(fn (main x) (fact x))\n";
+
+    val = run_main(arg,src);
     ASSERT_EQ(ival(val), 120);
 
-    val = check_run("(fn (fact n)\n"
-                    "  (if {n == 0}\n"
-                    "     1\n"
-                    "     {n * (fact {n - 1})}))\n"
-                    "(fact 10)\n");
+    sn_value_set_integer(arg, 10);
+    val = run_main(arg, src);
     ASSERT_EQ(ival(val), 3628800);
 }
 
@@ -1056,40 +1057,44 @@ void test_do(void)
                 "  (do (let arg 0)))\n");
 
     sn_value_t *val = NULL;
-    val = check_run("(fn (add10 x)\n"
-                    "  (do\n"
-                    "    (let y 10)\n"
-                    "    {x + y}))\n"
-                    "(add10 5)\n");
+    val = run_main(NULL,
+                   "(fn (add10 x)\n"
+                   "  (do\n"
+                   "    (let y 10)\n"
+                   "    {x + y}))\n"
+                   "(fn (main) (add10 5))\n");
     ASSERT_EQ(ival(val), 15);
 
-    val = check_run("(fn (add20 x)\n"
-                    "  (do\n"
-                    "    (let y 5)\n"
-                    "    (+ (do\n"
-                    "         (let z 15)\n"
-                    "         {x + z})\n"
-                    "       y)))\n"
-                    "(add20 10)\n");
+    val = run_main(NULL,
+                   "(fn (add20 x)\n"
+                   "  (do\n"
+                   "    (let y 5)\n"
+                   "    (+ (do\n"
+                   "         (let z 15)\n"
+                   "         {x + z})\n"
+                   "       y)))\n"
+                   "(fn (main) (add20 10))\n");
     ASSERT_EQ(ival(val), 30);
 
-    val = check_run("(fn (add20 x)\n"
-                    "  (do\n"
-                    "    (let y 5)\n"
-                    "    (+ (do\n"
-                    "         (let z 15)\n"
-                    "         (+ x y z)))))\n"
-                    "(add20 10)\n");
+    val = run_main(NULL,
+                   "(fn (add20 x)\n"
+                   "  (do\n"
+                   "    (let y 5)\n"
+                   "    (+ (do\n"
+                   "         (let z 15)\n"
+                   "         (+ x y z)))))\n"
+                   "(fn (main)(add20 10))\n");
     ASSERT_EQ(ival(val), 30);
 
-    val = check_run("(fn (times5 x)\n"
-                    "  (+ (do\n"
-                    "       (let x2 {x + x})\n"
-                    "       x2)\n"
-                    "     (do\n"
-                    "       (let x3 (+ x x x))\n"
-                    "       x3)))\n"
-                    "(times5 5)\n");
+    val = run_main(NULL,
+                   "(fn (times5 x)\n"
+                   "  (+ (do\n"
+                   "       (let x2 {x + x})\n"
+                   "       x2)\n"
+                   "     (do\n"
+                   "       (let x3 (+ x x x))\n"
+                   "       x3)))\n"
+                   "(fn (main) (times5 5))\n");
     ASSERT_EQ(ival(val), 25);
 }
 
@@ -1112,19 +1117,19 @@ void test_assign(void)
                 "  {null = null})\n");
 
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  (let x 1)\n"
-                    "  {x = {x + 1}}\n"
-                    "  x)\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let x 1)\n"
+                   "  {x = {x + 1}}\n"
+                   "  x)\n");
     ASSERT_EQ(ival(val), 2);
 
-    val = check_run("(fn (main)\n"
-                    "  (let x 1)\n"
-                    "  (do (let y 2)\n"
-                    "      {x = {x + y}})\n"
-                    "  x)\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let x 1)\n"
+                   "  (do (let y 2)\n"
+                   "      {x = {x + y}})\n"
+                   "  x)\n");
     ASSERT_EQ(ival(val), 3);
 }
 
@@ -1142,10 +1147,10 @@ void test_const(void)
                 "     false))\n");
 
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  (const foo 123)\n"
-                    "  {foo + 1})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (const foo 123)\n"
+                   "  {foo + 1})\n");
     ASSERT_EQ(ival(val), 124);
 }
 
