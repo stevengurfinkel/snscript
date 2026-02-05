@@ -1160,24 +1160,22 @@ void test_and_or(void)
                 "  (&& false))\n");
 
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  {true && true})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  {true && true})\n");
     ASSERT(bval(val));
 
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 4, NULL,
-              "(fn (main)\n"
-              "  {1 && null})\n"
-              "(main)\n");
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 2, 4, NULL, NULL,
+                   "(fn (main)\n"
+                   "  {1 && null})\n");
 
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 6, 7, "foo",
-              "(fn (main)\n"
-              "  (const foo 1)\n"
-              "  (&& true\n"
-              "      true\n"
-              "      (!= 1 0)\n"
-              "      foo))\n"
-              "(main)\n");
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 6, 7, "foo", NULL,
+                   "(fn (main)\n"
+                   "  (const foo 1)\n"
+                   "  (&& true\n"
+                   "      true\n"
+                   "      (!= 1 0)\n"
+                   "      foo))\n");
 
     error_build(SN_ERROR_LAZY_EXPR_TOO_SHORT, 2, 3, NULL,
                 "(fn (main)\n"
@@ -1187,24 +1185,22 @@ void test_and_or(void)
                 "(fn (main)\n"
                 "  (|| false))\n");
 
-    val = check_run("(fn (main)\n"
-                    "  {false || false})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                  "  {false || false})\n");
     ASSERT(!bval(val));
 
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 4, NULL,
-              "(fn (main)\n"
-              "  {1 || null})\n"
-              "(main)\n");
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 2, 4, NULL, NULL,
+                  "(fn (main)\n"
+                  "  {1 || null})\n");
 
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 6, 7, "foo",
-              "(fn (main)\n"
-              "  (const foo 1)\n"
-              "  (|| false\n"
-              "      false\n"
-              "      (== 1 0)\n"
-              "      foo))\n"
-              "(main)\n");
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 6, 7, "foo", NULL,
+                   "(fn (main)\n"
+                   "  (const foo 1)\n"
+                   "  (|| false\n"
+                   "      false\n"
+                   "      (== 1 0)\n"
+                   "      foo))\n");
 }
 
 void test_while(void)
