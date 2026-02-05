@@ -449,19 +449,19 @@ bool bval(sn_value_t *v)
 
 void test_eval_literal(void)
 {
-    char *src = "123\n";
+    char *src = "(fn (main) 123)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT_EQ(ival(val), 123);
     sn_program_destroy(prog);
 
-    src = "-123\n";
+    src = "(fn (main) -123)\n";
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT_EQ(ival(val), -123);
     sn_value_destroy(val);
     sn_program_destroy(prog);
@@ -469,19 +469,19 @@ void test_eval_literal(void)
 
 void test_eval_sum(void)
 {
-    char *src = "(+ 1 2 3)\n";
+    char *src = "(fn (main) (+ 1 2 3))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT_EQ(ival(val), 6);
     sn_program_destroy(prog);
 
-    src = "{10 - 5}\n";
+    src = "(fn (main) {10 - 5})\n";
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT_EQ(ival(val), 5);
     sn_value_destroy(val);
     sn_program_destroy(prog);
@@ -489,12 +489,12 @@ void test_eval_sum(void)
 
 void test_eval_nested(void)
 {
-    char *src = "(+ 1 2 3 (- -4))\n";
+    char *src = "(fn (main) (+ 1 2 3 (- -4)))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT_EQ(ival(val), 10);
     sn_value_destroy(val);
     sn_program_destroy(prog);
@@ -504,12 +504,12 @@ void test_variable(void)
 {
     char *src = "(let x 12)\n"
                 "(let y (+ x 1))\n"
-                "(+ x y)\n";
+                "(fn (main) (+ x y))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT_EQ(ival(val), 25);
     sn_value_destroy(val);
     sn_program_destroy(prog);
@@ -517,12 +517,12 @@ void test_variable(void)
 
 void test_null(void)
 {
-    char *src = "null\n";
+    char *src = "(fn (main) null)\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT(sn_value_is_null(val));
     sn_value_destroy(val);
     sn_program_destroy(prog);
@@ -619,95 +619,118 @@ void test_build_error(void)
 {
     error_build(SN_ERROR_EXPR_NOT_3_ITEMS, 2, 3, NULL,
                 "(let a 1)\n"
-                "  (let b a a)\n");
+                "  (let b a a)\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_EXPR_BAD_DEST, 3, 6, NULL,
                 "(let a 1)\n"
                 "(let b 2)\n"
-                "(let (+ a b) 3)\n");
+                "(let (+ a b) 3)\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_UNDECLARED, 1, 8, "a",
-                "(let a a)\n");
+                "(let a a)\n"
+                "(fn (main) null)\n");
 
     // function that returns NULL -> success
     error_build(SN_SUCCESS, 0, 0, NULL,
-                "(fn (foo) null)\n");
+                "(fn (foo) null)\n"
+                "(fn (main) null)\n");
 
     // function mus have at least three elements
     error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 2, 2, NULL,
                 "(let x +)\n"
-                " (fn)\n");
+                " (fn)\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 1, 1, NULL,
-                "(fn (foo a b c))\n");
+                "(fn (foo a b c))\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_FN_EXPR_TOO_SHORT, 1, 1, NULL,
-                "(fn (foo))\n");
+                "(fn (foo))\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_FN_PROTO_NOT_LIST, 2, 1, NULL,
                 "\n"
-                "(fn bar baz)\n");
+                "(fn bar baz)\n"
+                "(fn (main) null)\n");
 
     // function name must not already be declared
     error_build(SN_ERROR_REDECLARED, 2, 6, "foo",
                 "(let foo 1)\n"
-                "(fn (foo) 1)\n");
+                "(fn (foo) 1)\n"
+                "(fn (main) null)\n");
 
     // function prototype must be a list of symbols
     error_build(SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS, 1, 1, NULL,
-                "(fn (1 2) null)\n");
+                "(fn (1 2) null)\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS, 1, 1, NULL,
-                "(fn (foo (+ 1 2)) null)\n");
+                "(fn (foo (+ 1 2)) null)\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_FN_PROTO_COTAINS_NON_SYMBOLS, 1, 1, NULL,
-                "(fn ((null)) null)\n");
+                "(fn ((null)) null)\n"
+                "(fn (main) null)\n");
 
     // if-statement with only a 'true' arm
     error_build(SN_SUCCESS, 0, 0, NULL,
                 "(let x 0)\n"
-                "(let y (if x 0))\n");
+                "(let y (if x 0))\n"
+                "(fn (main) null)\n");
 
     // if-statement with both a 'true' and 'false' arm
     error_build(SN_SUCCESS, 0, 0, NULL,
                 "(let x 0)\n"
-                "(let y (if x 0 1))\n");
+                "(let y (if x 0 1))\n"
+                "(fn (main) null)\n");
 
     // no arms
     error_build(SN_ERROR_IF_EXPR_INVALID_LENGTH, 2, 8, NULL,
                 "(let x 0)\n"
-                "(let y (if x))\n");
+                "(let y (if x))\n"
+                "(fn (main) null)\n");
 
     // three arms
     error_build(SN_ERROR_IF_EXPR_INVALID_LENGTH, 2, 8, NULL,
                 "(let x 0)\n"
-                "(let y (if x 0 1 2))\n");
+                "(let y (if x 0 1 2))\n"
+                "(fn (main) null)\n");
 
     // empty epxression
     error_build(SN_ERROR_EMPTY_EXPR, 1, 1, NULL,
-                "()\n");
+                "()\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_EMPTY_EXPR, 2, 10, NULL,
                 "(let a\n"
-                "     (if () - +))\n");
+                "     (if () - +))\n"
+                "(fn (main) null)\n");
 
     // nested functions aren't allowed
     error_build(SN_ERROR_NESTED_FN_EXPR, 1, 8, NULL,
-                "(let a (fn (foo) null))\n");
+                "(let a (fn (foo) null))\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_NESTED_FN_EXPR, 1, 5, NULL,
-                "(if (fn (foo) null) null 1)\n");
+                "(if (fn (foo) null) null 1)\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_NESTED_FN_EXPR, 2, 5, NULL,
                 "(fn (foo a b)\n"
-                "    (fn (nest) null))\n");
+                "    (fn (nest) null))\n"
+                "(fn (main) null)\n");
 
     // nor nested lets
     error_build(SN_ERROR_NESTED_LET_EXPR, 1, 8, NULL,
-                "(let a (let b 0))\n");
+                "(let a (let b 0))\n"
+                "(fn (main) null)\n");
 
     error_build(SN_ERROR_NESTED_LET_EXPR, 1, 5, NULL,
-                "(if (let a 0) null 1)\n");
+                "(if (let a 0) null 1)\n"
+                "(fn (main) null)\n");
 
     // do block - too short
     error_build(SN_ERROR_DO_EXPR_TOO_SHORT, 2, 3, NULL,
@@ -774,14 +797,14 @@ sn_value_t *run_main(sn_value_t *arg, const char *src)
 void test_run_error()
 {
     // wrong number of args to function
-    error_run(SN_ERROR_WRONG_ARG_COUNT_IN_CALL, 2, 1, NULL,
-              "(fn (foo a) null)\n"
-              "(foo)\n");
+    error_run_main(SN_ERROR_WRONG_ARG_COUNT_IN_CALL, 2, 12, NULL, NULL,
+                   "(fn (foo a) null)\n"
+                   "(fn (main) (foo))\n");
 
     // wrong number of args to function
-    error_run(SN_ERROR_WRONG_ARG_COUNT_IN_CALL, 2, 1, NULL,
-              "(fn (foo) null)\n"
-              "(foo 1)\n");
+    error_run_main(SN_ERROR_WRONG_ARG_COUNT_IN_CALL, 2, 12, NULL, NULL,
+                   "(fn (foo) null)\n"
+                   "(fn (main) (foo 1))\n");
 
 }
 
