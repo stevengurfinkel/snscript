@@ -57,8 +57,16 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
+    sn_value_t *arg = sn_value_create();
+    if (argc == 3) {
+        sn_value_set_integer(arg, atoi(argv[2]));
+    }
+    else {
+        sn_value_set_integer(arg, 0);
+    }
+
     sn_value_t *value = sn_value_create();
-    status = sn_program_run(prog, value);
+    status = sn_program_run_main(prog, arg, value);
     if (status != SN_SUCCESS) {
         write_error(argv[1], status, prog);
         exit(-1);

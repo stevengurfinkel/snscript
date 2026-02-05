@@ -530,12 +530,12 @@ void test_null(void)
 
 void test_println(void)
 {
-    char *src = "(println (+ 0 1) (+ 1 1) (+ 1 2))\n";
+    char *src = "(fn (main) (println (+ 0 1) (+ 1 1) (+ 1 2)))\n";
     sn_program_t *prog = NULL;
     ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
     ASSERT_OK(sn_program_build(prog));
     sn_value_t *val = sn_value_create();
-    ASSERT_OK(sn_program_run(prog, val));
+    ASSERT_OK(sn_program_run_main(prog, NULL, val));
     ASSERT(sn_value_is_null(val));
     sn_value_destroy(val);
     sn_program_destroy(prog);
@@ -743,29 +743,6 @@ void test_build_error(void)
 }
 
 sn_value_t *
-error_run(sn_error_t err_code,
-          int err_line,
-          int err_col,
-          const char *err_sym,
-          const char *src)
-{
-    sn_value_t *value = sn_value_create();
-    sn_program_t *prog = NULL;
-    ASSERT_OK(sn_program_create(&prog, src, strlen(src)));
-    ASSERT_OK(sn_program_build(prog));
-    sn_error_t status = sn_program_run(prog, value);
-    if (status != err_code) {
-        fprintf(stderr, "sn_program_run returned %s\n", sn_error_str(status));
-        abort();
-    }
-    if (err_code != SN_SUCCESS) {
-        error_check(prog, err_line, err_col, err_sym);
-    }
-    sn_program_destroy(prog);
-    return value;
-}
-
-sn_value_t *
 error_run_main(sn_error_t err_code,
               int err_line,
               int err_col,
@@ -806,11 +783,6 @@ void test_run_error()
                    "(fn (foo) null)\n"
                    "(fn (main) (foo 1))\n");
 
-}
-
-sn_value_t *check_run(const char *str)
-{
-    return error_run(SN_SUCCESS, 0, 0, NULL, str);
 }
 
 void test_run_func()

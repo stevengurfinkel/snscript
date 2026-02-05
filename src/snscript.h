@@ -51,7 +51,6 @@ void sn_program_error_symbol(sn_program_t *prog, const char **symbol_out);
 sn_error_t sn_program_create(sn_program_t **program_out, const char *source, size_t size);
 void sn_program_destroy(sn_program_t *prog);
 sn_error_t sn_program_build(sn_program_t *prog);
-sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out);
 sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *value_out);
 
 sn_value_t *sn_value_create(void);

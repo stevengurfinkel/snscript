@@ -26,23 +26,6 @@ void sn_env_destroy(sn_env_t *env)
     free(env);
 }
 
-sn_error_t sn_program_run(sn_program_t *prog, sn_value_t *value_out)
-{
-    *value_out = sn_null;
-    sn_error_t status = SN_SUCCESS;
-    sn_env_t *env = sn_env_create(&prog->globals, NULL);
-
-    for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
-        status = sn_expr_eval(expr, env, value_out);
-        if (status != SN_SUCCESS) {
-            return status;
-        }
-    }
-
-    sn_env_destroy(env);
-    return status;
-}
-
 sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
 {
     assert(ref->type == SN_SCOPE_TYPE_GLOBAL || ref->type == SN_SCOPE_TYPE_LOCAL);
