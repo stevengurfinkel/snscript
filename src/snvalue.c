@@ -41,3 +41,9 @@ bool sn_value_is_null(sn_value_t *value)
 {
     return value->type == SN_VALUE_TYPE_NULL;
 }
+
+void sn_value_set_integer(sn_value_t *value, int64_t i)
+{
+    value->type = SN_VALUE_TYPE_INTEGER;
+    value->i = i;
+}

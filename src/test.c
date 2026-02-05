@@ -766,6 +766,11 @@ error_run_main(sn_error_t err_code,
     return value;
 }
 
+sn_value_t *run_main(sn_value_t *arg, const char *src)
+{
+    return error_run_main(SN_SUCCESS, 0, 0, NULL, arg, src);
+}
+
 void test_run_error()
 {
     // wrong number of args to function
@@ -1275,6 +1280,18 @@ void test_main(void)
 
     error_build(SN_ERROR_TOO_MANY_PARAMS_FOR_MAIN_FN, 1, 5, NULL,
                 "(fn (main a b) null)\n");
+
+    sn_value_t *val = NULL;
+    val = run_main(arg,
+                  "(fn (main)\n"
+                  "  12)\n");
+    ASSERT_EQ(ival(val), 12);
+
+    sn_value_set_integer(arg, 10);
+    val = run_main(arg,
+                  "(fn (main x)\n"
+                  " {x + 1})\n");
+    ASSERT_EQ(ival(val), 11);
 
     sn_value_destroy(arg);
 }
