@@ -793,164 +793,162 @@ sn_value_t *check_run(const char *str)
 void test_run_func()
 {
     // nested functions
-    sn_value_t *val = check_run(
+    sn_value_t *val = run_main(NULL,
         "(let three 3)\n"
         "(fn (double x)\n"
         "  (+ x x))\n"
         "(fn (triple x)\n"
         "  (+ (double x) x))\n"
-        "(triple three)\n");
+        "(triple three)\n"
+        "(fn (main) (triple three))\n");
 
     ASSERT_EQ(ival(val), 9);
 
     // local scope is separate
-    val = check_run(
+    val = run_main(NULL,
         "(let x 3)\n"
         "(fn (double x)\n"
         "  (+ x x))\n"
-        "(double x)\n");
+        "(double x)\n"
+        "(fn (main) (double x))\n");
 
     ASSERT_EQ(ival(val), 6);
 
     // local let
-    val = check_run(
+    val = run_main(NULL,
         "(let z 3)\n"
         "(fn (inc x)\n"
         "  (let z 2)\n"
         "  (let y -1)\n"
         "  (+ x y z))\n"
-        "(inc z)\n");
+        "(fn (main) (inc z))\n");
     ASSERT_EQ(ival(val), 4);
 
-    val = check_run("true");
+    val = run_main(NULL, "(fn (main) true)");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("false");
+    val = run_main(NULL, "(fn (main) false)");
     ASSERT_EQ(bval(val), false);
-
 }
 
 void test_equals(void)
 {
     sn_value_t *val = NULL;
-    val = check_run("(fn (main)\n"
-                    "  {1 == 2})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  {1 == 2})\n");
     ASSERT_EQ(bval(val), false);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a 12)\n"
-                    "  (let b 12)\n"
-                    "  {a == b})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a 12)\n"
+                   "  (let b 12)\n"
+                   "  {a == b})\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a +)\n"
-                    "  (let b +)\n"
-                    "  {a == b})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a +)\n"
+                   "  (let b +)\n"
+                   "  {a == b})\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a +)\n"
-                    "  (let b -)\n"
-                    "  {a == b})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a +)\n"
+                   "  (let b -)\n"
+                   "  {a == b})\n");
     ASSERT_EQ(bval(val), false);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a main)\n"
-                    "  (let b main)\n"
-                    "  {a == b})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a main)\n"
+                   "  (let b main)\n"
+                   "  {a == b})\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a main)\n"
-                    "  (let b +)\n"
-                    "  {a == b})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a main)\n"
+                   "  (let b +)\n"
+                   "  {a == b})\n");
     ASSERT_EQ(bval(val), false);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a ==)\n"
-                    "  {a a a})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a ==)\n"
+                   "  {a a a})\n");
     ASSERT_EQ(bval(val), true);
 
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL, NULL,
+                   "(fn (main)\n"
+                   "  {0 == false})\n");
+
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                   "  {1 != 2})\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a 12)\n"
+                   "  (let b 12)\n"
+                   "  {a != b})\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a +)\n"
+                   "  (let b +)\n"
+                   "  {a != b})\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a +)\n"
+                   "  (let b -)\n"
+                   "  {a != b})\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                   "  (let a main)\n"
+                   "  (let b main)\n"
+                   "  {a != b})\n");
+    ASSERT_EQ(bval(val), false);
+
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a main)\n"
+                   "  (let b +)\n"
+                   "  {a != b})\n");
+    ASSERT_EQ(bval(val), true);
+
+    val = run_main(NULL,
+                  "(fn (main)\n"
+                  "  (let a !=)\n"
+                  "  {a a a})\n");
+    ASSERT_EQ(bval(val), false);
+
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL, NULL,
               "(fn (main)\n"
-              "  {0 == false})\n"
-              "(main)\n");
+              "  {0 != false})\n");
 
-    val = check_run("(fn (main)\n"
-                    "  {1 != 2})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (! {1 == 2}))\n");
     ASSERT_EQ(bval(val), true);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a 12)\n"
-                    "  (let b 12)\n"
-                    "  {a != b})\n"
-                    "(main)\n");
+    val = run_main(NULL,
+                   "(fn (main)\n"
+                   "  (let a 12)\n"
+                   "  (let b 12)\n"
+                   "  (! {a == b}))\n");
     ASSERT_EQ(bval(val), false);
 
-    val = check_run("(fn (main)\n"
-                    "  (let a +)\n"
-                    "  (let b +)\n"
-                    "  {a != b})\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), false);
-
-    val = check_run("(fn (main)\n"
-                    "  (let a +)\n"
-                    "  (let b -)\n"
-                    "  {a != b})\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), true);
-
-    val = check_run("(fn (main)\n"
-                    "  (let a main)\n"
-                    "  (let b main)\n"
-                    "  {a != b})\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), false);
-
-    val = check_run("(fn (main)\n"
-                    "  (let a main)\n"
-                    "  (let b +)\n"
-                    "  {a != b})\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), true);
-
-    val = check_run("(fn (main)\n"
-                    "  (let a !=)\n"
-                    "  {a a a})\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), false);
-
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
+    error_run_main(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL, NULL,
               "(fn (main)\n"
-              "  {0 != false})\n"
-              "(main)\n");
-
-    val = check_run("(fn (main)\n"
-                    "  (! {1 == 2}))\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), true);
-
-    val = check_run("(fn (main)\n"
-                    "  (let a 12)\n"
-                    "  (let b 12)\n"
-                    "  (! {a == b}))\n"
-                    "(main)\n");
-    ASSERT_EQ(bval(val), false);
-
-    error_run(SN_ERROR_WRONG_VALUE_TYPE, 2, 3, NULL,
-              "(fn (main)\n"
-              "  (! null))\n"
-              "(main)\n");
+              "  (! null))\n");
 }
 
 void test_type_queries(void)
