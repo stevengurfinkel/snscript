@@ -139,7 +139,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
 
     // entry point defined by script
     prog->sn_main = sn_program_default_symbol(prog, "main");
-    prog->main_ref.type = SN_VALUE_TYPE_INVALID;
+    prog->main_ref.type = SN_SCOPE_TYPE_INVALID;
 
     // add global values
     *sn_program_add_builtin_value(prog, "null") = sn_null;
