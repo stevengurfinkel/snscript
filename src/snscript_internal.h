@@ -70,7 +70,17 @@ typedef struct sn_scope_st sn_scope_t;
 typedef struct sn_const_st sn_const_t;
 typedef struct sn_env_st sn_env_t;
 typedef struct sn_block_st sn_block_t;
+typedef struct sn_eval_st sn_eval_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
+
+struct sn_eval_st
+{
+    sn_expr_t *expr;
+    sn_env_t *env;
+    sn_value_t *val_out;
+
+    sn_eval_t *parent;
+};
 
 struct sn_value_st
 {
