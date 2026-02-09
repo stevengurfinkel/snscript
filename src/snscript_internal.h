@@ -24,32 +24,6 @@ typedef enum sn_value_type_en
     SN_VALUE_TYPE_BUILTIN_FN,
 } sn_value_type_t;
 
-typedef struct sn_symbol_st sn_symbol_t;
-typedef struct sn_expr_st sn_expr_t;
-typedef struct sn_func_st sn_func_t;
-typedef struct sn_scope_st sn_scope_t;
-typedef struct sn_const_st sn_const_t;
-typedef struct sn_env_st sn_env_t;
-typedef struct sn_block_st sn_block_t;
-typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
-
-struct sn_value_st
-{
-    sn_value_type_t type;
-    union {
-        int64_t i;
-        sn_func_t *user_fn;
-        sn_builtin_fn_t builtin_fn;
-    };
-};
-
-struct sn_env_st
-{
-    sn_value_t *globals;
-    sn_value_t *locals;
-    sn_value_t backing[];
-};
-
 typedef enum sn_rtype_st
 {
     SN_RTYPE_INVALID,
@@ -82,6 +56,39 @@ typedef enum sn_rtype_st
 
 } sn_rtype_t;
 
+typedef enum sn_scope_type_en
+{
+    SN_SCOPE_TYPE_INVALID,
+    SN_SCOPE_TYPE_GLOBAL,
+    SN_SCOPE_TYPE_LOCAL,
+} sn_scope_type_t;
+
+typedef struct sn_symbol_st sn_symbol_t;
+typedef struct sn_expr_st sn_expr_t;
+typedef struct sn_func_st sn_func_t;
+typedef struct sn_scope_st sn_scope_t;
+typedef struct sn_const_st sn_const_t;
+typedef struct sn_env_st sn_env_t;
+typedef struct sn_block_st sn_block_t;
+typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
+
+struct sn_value_st
+{
+    sn_value_type_t type;
+    union {
+        int64_t i;
+        sn_func_t *user_fn;
+        sn_builtin_fn_t builtin_fn;
+    };
+};
+
+struct sn_env_st
+{
+    sn_value_t *globals;
+    sn_value_t *locals;
+    sn_value_t backing[];
+};
+
 struct sn_symbol_st
 {
     size_t length;
@@ -89,12 +96,6 @@ struct sn_symbol_st
     char value[];
 };
 
-typedef enum sn_scope_type_en
-{
-    SN_SCOPE_TYPE_INVALID,
-    SN_SCOPE_TYPE_GLOBAL,
-    SN_SCOPE_TYPE_LOCAL,
-} sn_scope_type_t;
 
 typedef struct sn_ref_st
 {
