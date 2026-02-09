@@ -36,17 +36,27 @@ sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
     return &env->locals[ref->index];
 }
 
+sn_error_t sn_eval_expr_list(sn_expr_t *expr_head, sn_env_t *env, sn_value_t *value_out)
+{
+    for (sn_expr_t *expr = expr_head; expr != NULL; expr = expr->next) {
+        sn_error_t status = sn_expr_eval(expr, env, value_out);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *value_out)
 {
     *value_out = sn_null;
     sn_error_t status = SN_SUCCESS;
     sn_env_t *env = sn_env_create(&prog->globals, NULL);
 
-    for (sn_expr_t *expr = prog->expr.child_head; expr != NULL; expr = expr->next) {
-        status = sn_expr_eval(expr, env, value_out);
-        if (status != SN_SUCCESS) {
-            return status;
-        }
+    status = sn_eval_expr_list(prog->expr.child_head, env, value_out);
+    if (status != SN_SUCCESS) {
+        return status;
     }
 
     if (prog->main_ref.type == SN_SCOPE_TYPE_INVALID) {
@@ -68,11 +78,9 @@ sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *
         }
     }
 
-    for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
-        status = sn_expr_eval(expr, call_env, value_out);
-        if (status != SN_SUCCESS) {
-            return status;
-        }
+    status = sn_eval_expr_list(func->body, call_env, value_out);
+    if (status != SN_SUCCESS) {
+        return status;
     }
 
     sn_env_destroy(call_env);
@@ -134,11 +142,9 @@ sn_error_t sn_expr_eval_call(sn_eval_t *e)
             return status;
         }
 
-        for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
-            status = sn_expr_eval(expr, call_env, e->val_out);
-            if (status != SN_SUCCESS) {
-                return status;
-            }
+        status = sn_eval_expr_list(func->body, call_env, e->val_out);
+        if (status != SN_SUCCESS) {
+            return status;
         }
 
         sn_env_destroy(call_env);
