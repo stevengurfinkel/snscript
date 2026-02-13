@@ -81,6 +81,7 @@ typedef struct sn_env_st sn_env_t;
 typedef struct sn_block_st sn_block_t;
 typedef struct sn_stack_st sn_stack_t;
 typedef struct sn_frame_st sn_frame_t;
+typedef struct sn_call_frame_st sn_call_frame_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 struct sn_value_st
@@ -93,6 +94,14 @@ struct sn_value_st
     };
 };
 
+struct sn_call_frame_st
+{
+    int arg_idx;
+    sn_value_t *args;
+    sn_env_t *env;
+    sn_value_t fn;
+};
+
 struct sn_frame_st
 {
     sn_stack_t *stack;
@@ -100,12 +109,10 @@ struct sn_frame_st
     sn_env_t *env;
     sn_value_t *val_out;
     sn_value_t cond;
-    sn_env_t *call_env;
-    sn_value_t *args;
-    int arg_idx;
     int cont_pos;
     sn_expr_t *prev_expr;
     sn_expr_t *cont_child;
+    sn_call_frame_t call;
 };
 
 struct sn_stack_st

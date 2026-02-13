@@ -129,25 +129,26 @@ sn_value_t *sn_env_lookup_ref(sn_env_t *env, sn_ref_t *ref)
 sn_error_t sn_frame_eval_call(sn_frame_t *f)
 {
     sn_expr_t *fn_expr = f->expr->child_head;
+    sn_call_frame_t *call = &f->call;
     int arg_count = f->expr->child_count - 1;
     sn_error_t status = SN_SUCCESS;
 
     switch (f->cont_pos) {
         case SN_CALL_FRAME_POS_EVAL_FN:
-            return sn_frame_push_pos(f, fn_expr, f->env, &f->cond);
+            return sn_frame_push_pos(f, fn_expr, f->env, &call->fn);
 
         case SN_CALL_FRAME_POS_ALLOC_ENV:
-            if (f->cond.type == SN_VALUE_TYPE_USER_FN) {
-                sn_func_t *func = f->cond.user_fn;
+            if (call->fn.type == SN_VALUE_TYPE_USER_FN) {
+                sn_func_t *func = call->fn.user_fn;
                 if (arg_count != func->param_count) {
                     return sn_expr_error(f->expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
                 }
 
-                f->call_env = sn_env_create(&func->scope, f->env);
-                f->args = f->call_env->locals;
+                call->env = sn_env_create(&func->scope, f->env);
+                call->args = call->env->locals;
             }
-            else if (f->cond.type == SN_VALUE_TYPE_BUILTIN_FN) {
-                f->args = calloc(arg_count, sizeof f->args[0]);
+            else if (call->fn.type == SN_VALUE_TYPE_BUILTIN_FN) {
+                call->args = calloc(arg_count, sizeof call->args[0]);
             }
             else {
                 return sn_expr_error(fn_expr, SN_ERROR_CALLEE_NOT_A_FN);
@@ -157,18 +158,18 @@ sn_error_t sn_frame_eval_call(sn_frame_t *f)
 
         case SN_CALL_FRAME_POS_EVAL_ARGS:
             if (f->cont_child != NULL) {
-                return sn_frame_push_expr(f, f->env, &f->args[f->arg_idx++]);
+                return sn_frame_push_expr(f, f->env, &call->args[call->arg_idx++]);
             }
 
-            if (f->cond.type == SN_VALUE_TYPE_BUILTIN_FN) {
+            if (call->fn.type == SN_VALUE_TYPE_BUILTIN_FN) {
                 return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_BUILTIN, NULL);
             }
 
-            return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, f->cond.user_fn->body);
+            return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, call->fn.user_fn->body);
 
         case SN_CALL_FRAME_POS_EVAL_BUILTIN:
-            status = f->cond.builtin_fn(f->val_out, arg_count, f->args);
-            free(f->args);
+            status = call->fn.builtin_fn(f->val_out, arg_count, call->args);
+            free(call->args);
             if (status != SN_SUCCESS) {
                 return sn_expr_error(f->expr, status);
             }
@@ -176,9 +177,9 @@ sn_error_t sn_frame_eval_call(sn_frame_t *f)
 
         case SN_CALL_FRAME_POS_EVAL_USER:
             if (f->cont_child != NULL) {
-                return sn_frame_push_expr(f, f->call_env, f->val_out);
+                return sn_frame_push_expr(f, call->env, f->val_out);
             }
-            sn_env_destroy(f->call_env);
+            sn_env_destroy(call->env);
             return sn_frame_pop(f);
 
         default:
@@ -317,7 +318,6 @@ sn_error_t sn_frame_dispatch(sn_frame_t *f)
             return sn_frame_eval_assign(f);
 
         case SN_RTYPE_FN_EXPR:
-            *f->val_out = sn_null;
             return sn_frame_pop(f);
 
         case SN_RTYPE_IF_EXPR:
