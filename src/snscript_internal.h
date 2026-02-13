@@ -63,6 +63,15 @@ typedef enum sn_scope_type_en
     SN_SCOPE_TYPE_LOCAL,
 } sn_scope_type_t;
 
+typedef enum sn_call_frame_pos_en
+{
+    SN_CALL_FRAME_POS_EVAL_FN = 0,
+    SN_CALL_FRAME_POS_ALLOC_ENV,
+    SN_CALL_FRAME_POS_EVAL_ARGS,
+    SN_CALL_FRAME_POS_EVAL_BUILTIN,
+    SN_CALL_FRAME_POS_EVAL_USER,
+} sn_call_frame_pos_t;
+
 typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_func_st sn_func_t;
@@ -71,6 +80,8 @@ typedef struct sn_const_st sn_const_t;
 typedef struct sn_env_st sn_env_t;
 typedef struct sn_block_st sn_block_t;
 typedef struct sn_eval_st sn_eval_t;
+typedef struct sn_stack_st sn_stack_t;
+typedef struct sn_frame_st sn_frame_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 struct sn_eval_st
@@ -92,6 +103,28 @@ struct sn_value_st
     };
 };
 
+struct sn_frame_st
+{
+    sn_stack_t *stack;
+    sn_expr_t *expr;
+    sn_env_t *env;
+    sn_value_t *val_out;
+    sn_value_t cond;
+    sn_env_t *call_env;
+    sn_value_t *args;
+    int arg_idx;
+    int cont_pos;
+    sn_expr_t *prev_expr;
+    sn_expr_t *cont_child;
+};
+
+struct sn_stack_st
+{
+    int frame_count;
+    int frame_idx;
+    sn_frame_t frames[];
+};
+
 struct sn_env_st
 {
     sn_value_t *globals;
@@ -105,7 +138,6 @@ struct sn_symbol_st
     sn_symbol_t *next;
     char value[];
 };
-
 
 typedef struct sn_ref_st
 {
