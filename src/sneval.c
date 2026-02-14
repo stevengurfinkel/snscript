@@ -130,6 +130,7 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
     sn_call_frame_t *call = &f->call;
     int arg_count = f->expr->child_count - 1;
     sn_value_t *fn = sn_stack_alloc_temp(stack);
+    sn_error_t status = SN_ERROR_GENERIC;
 
     switch (f->cont_pos) {
         case SN_CALL_FRAME_POS_EVAL_FN:
@@ -170,7 +171,7 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
             return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, fn->user_fn->body);
 
         case SN_CALL_FRAME_POS_EVAL_BUILTIN:
-            sn_error_t status = fn->builtin_fn(f->val_out, arg_count, f->locals);
+            status = fn->builtin_fn(f->val_out, arg_count, f->locals);
             if (status != SN_SUCCESS) {
                 return sn_expr_error(f->expr, status);
             }
