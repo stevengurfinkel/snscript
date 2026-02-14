@@ -44,10 +44,15 @@ sn_value_t *sn_stack_alloc_locals(sn_stack_t *stack, sn_scope_t *locals)
     return sn_stack_alloc_values(stack, locals->max_decl_count);
 }
 
+sn_frame_t *sn_stack_top(sn_stack_t *stack)
+{
+    return &stack->frames[stack->frame_top];
+}
+
 sn_error_t
 sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
 {
-    sn_frame_t *f = &stack->frames[stack->frame_top];
+    sn_frame_t *f = sn_stack_top(stack);
     memset(f, '\0', sizeof *f);
     f->expr = expr;
     f->locals = locals;
@@ -58,12 +63,13 @@ sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_val
 }
 
 sn_error_t
-sn_stack_push(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
+sn_stack_push(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *val_out)
 {
     if (stack->frame_top == 0) {
         return sn_expr_error(expr, SN_ERROR_GENERIC);
     }
 
+    sn_value_t *locals = sn_stack_top(stack)->locals;
     stack->frame_top--;
     return sn_stack_init_top(stack, expr, locals, val_out);
 }
@@ -82,15 +88,10 @@ sn_expr_t *sn_frame_expr_next(sn_frame_t *f)
     return expr;
 }
 
-sn_frame_t *sn_stack_top(sn_stack_t *stack)
-{
-    return &stack->frames[stack->frame_top];
-}
-
 sn_error_t
-sn_stack_emplace(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
+sn_stack_emplace(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *val_out)
 {
-    return sn_stack_init_top(stack, expr, locals, val_out);
+    return sn_stack_init_top(stack, expr, sn_stack_top(stack)->locals, val_out);
 }
 
 sn_error_t sn_stack_pop(sn_stack_t *stack)
@@ -101,7 +102,7 @@ sn_error_t sn_stack_pop(sn_stack_t *stack)
     return SN_SUCCESS;
 }
 
-sn_value_t *sn_env_lookup_ref(sn_stack_t *stack, sn_ref_t *ref)
+sn_value_t *sn_stack_lookup_ref(sn_stack_t *stack, sn_ref_t *ref)
 {
     assert(ref->type == SN_SCOPE_TYPE_GLOBAL || ref->type == SN_SCOPE_TYPE_LOCAL);
 
@@ -121,7 +122,7 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
     switch (f->cont_pos) {
         case SN_CALL_FRAME_POS_EVAL_FN:
             f->cont_pos = SN_CALL_FRAME_POS_ALLOC_ENV;
-            return sn_stack_push(stack, fn_expr, f->locals, &call->fn);
+            return sn_stack_push(stack, fn_expr, &call->fn);
 
         case SN_CALL_FRAME_POS_ALLOC_ENV:
             if (call->fn.type == SN_VALUE_TYPE_USER_FN) {
@@ -145,9 +146,10 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
             if (f->cont_child != NULL) {
                 return sn_stack_push(stack,
                                      sn_frame_expr_next(f),
-                                     f->locals,
                                      &call->locals[call->arg_idx++]);
             }
+
+            f->locals = call->locals;
 
             if (call->fn.type == SN_VALUE_TYPE_BUILTIN_FN) {
                 return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_BUILTIN, NULL);
@@ -156,7 +158,7 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
             return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, call->fn.user_fn->body);
 
         case SN_CALL_FRAME_POS_EVAL_BUILTIN:
-            sn_error_t status = call->fn.builtin_fn(f->val_out, arg_count, call->locals);
+            sn_error_t status = call->fn.builtin_fn(f->val_out, arg_count, f->locals);
             if (status != SN_SUCCESS) {
                 return sn_expr_error(f->expr, status);
             }
@@ -164,7 +166,7 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
 
         case SN_CALL_FRAME_POS_EVAL_USER:
             if (f->cont_child != NULL) {
-                return sn_stack_push(stack, sn_frame_expr_next(f), call->locals, f->val_out);
+                return sn_stack_push(stack, sn_frame_expr_next(f), f->val_out);
             }
             return sn_stack_pop(stack);
 
@@ -184,10 +186,10 @@ sn_error_t sn_stack_eval_assign(sn_stack_t *stack)
 
     if (f->cont_pos == 0) {
         f->cont_pos++;
-        return sn_stack_push(stack, src, f->locals, &f->cond);
+        return sn_stack_push(stack, src, &f->cond);
     }
 
-    *sn_env_lookup_ref(stack, &dst->ref) = f->cond;
+    *sn_stack_lookup_ref(stack, &dst->ref) = f->cond;
     return sn_stack_pop(stack);
 }
 
@@ -200,7 +202,7 @@ sn_error_t sn_stack_eval_if(sn_stack_t *stack)
 
     if (f->cont_pos == 0) {
         f->cont_pos++;
-        return sn_stack_push(stack, cond, f->locals, &f->cond);
+        return sn_stack_push(stack, cond, &f->cond);
     }
 
     if (f->cond.type != SN_VALUE_TYPE_BOOLEAN) {
@@ -208,11 +210,11 @@ sn_error_t sn_stack_eval_if(sn_stack_t *stack)
     }
 
     if (f->cond.i) {
-        return sn_stack_emplace(stack, true_arm, f->locals, f->val_out);
+        return sn_stack_emplace(stack, true_arm, f->val_out);
     }
 
     if (false_arm != NULL) {
-        return sn_stack_emplace(stack, false_arm, f->locals, f->val_out);
+        return sn_stack_emplace(stack, false_arm, f->val_out);
     }
 
     return sn_stack_pop(stack);
@@ -227,7 +229,7 @@ sn_error_t sn_stack_eval_do(sn_stack_t *stack)
     }
 
     if (f->cont_child != NULL) {
-        return sn_stack_push(stack, sn_frame_expr_next(f), f->locals, f->val_out);
+        return sn_stack_push(stack, sn_frame_expr_next(f), f->val_out);
     }
 
     return sn_stack_pop(stack);
@@ -268,7 +270,7 @@ sn_error_t sn_stack_eval_andor(sn_stack_t *stack)
             return sn_stack_pop(stack);
         }
 
-        return sn_stack_push(stack, sn_frame_expr_next(f), f->locals, f->val_out);
+        return sn_stack_push(stack, sn_frame_expr_next(f), f->val_out);
     }
 
     if (f->val_out->type != SN_VALUE_TYPE_BOOLEAN) {
@@ -286,7 +288,7 @@ sn_error_t sn_stack_eval_while(sn_stack_t *stack)
 
     if (f->cont_pos == 0) {
         f->cont_pos++;
-        return sn_stack_push(stack, cond_expr, f->locals, &f->cond);
+        return sn_stack_push(stack, cond_expr, &f->cond);
     }
 
     if (f->cond.type != SN_VALUE_TYPE_BOOLEAN) {
@@ -299,7 +301,7 @@ sn_error_t sn_stack_eval_while(sn_stack_t *stack)
 
     if (body != NULL) {
         f->cont_pos = 0;
-        return sn_stack_push(stack, body, f->locals, f->val_out);
+        return sn_stack_push(stack, body, f->val_out);
     }
 
     return sn_frame_goto(f, 0, NULL);
@@ -315,7 +317,7 @@ sn_error_t sn_stack_dispatch(sn_stack_t *stack)
             return sn_stack_pop(stack);
 
         case SN_RTYPE_VAR:
-            *f->val_out = *sn_env_lookup_ref(stack, &f->expr->ref);
+            *f->val_out = *sn_stack_lookup_ref(stack, &f->expr->ref);
             return sn_stack_pop(stack);
 
         case SN_RTYPE_CALL:
@@ -402,7 +404,7 @@ sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *
         return SN_ERROR_MAIN_FN_MISSING;
     }
 
-    sn_value_t *main_val = sn_env_lookup_ref(&stack, &prog->main_ref);
+    sn_value_t *main_val = sn_stack_lookup_ref(&stack, &prog->main_ref);
     assert(main_val->type == SN_VALUE_TYPE_USER_FN);
     sn_func_t *func = main_val->user_fn;
 
