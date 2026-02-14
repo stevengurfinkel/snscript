@@ -116,8 +116,7 @@ struct sn_stack_st
     int value_top;
     sn_value_t *values;
 
-    int frame_count;
-    int frame_idx;
+    int frame_top;
 
     sn_value_t *globals;
 

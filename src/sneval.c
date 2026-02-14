@@ -23,14 +23,13 @@ void sn_stack_free_values(sn_stack_t *stack, int count)
 
 bool sn_stack_is_empty(sn_stack_t *stack)
 {
-    return stack->frame_idx < 0;
+    return stack->frame_top == SN_STACK_FRAME_COUNT;
 }
 
 void sn_stack_init(sn_stack_t *stack, sn_scope_t *globals)
 {
-    stack->frame_count = SN_STACK_FRAME_COUNT;
-    stack->frames = calloc(stack->frame_count, sizeof stack->frames[0]);
-    stack->frame_idx = -1;
+    stack->frame_top = SN_STACK_FRAME_COUNT;
+    stack->frames = calloc(stack->frame_top, sizeof stack->frames[0]);
 
     stack->value_top = SN_STACK_VALUE_COUNT;
     stack->values = calloc(stack->value_top, sizeof stack->values[0]);
@@ -58,7 +57,7 @@ void sn_stack_free_locals(sn_stack_t *stack, sn_scope_t *locals)
 sn_error_t
 sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
 {
-    sn_frame_t *f = &stack->frames[stack->frame_idx];
+    sn_frame_t *f = &stack->frames[stack->frame_top];
     memset(f, '\0', sizeof *f);
     f->expr = expr;
     f->locals = locals;
@@ -70,11 +69,11 @@ sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_val
 sn_error_t
 sn_stack_push(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
 {
-    if (stack->frame_idx == stack->frame_count) {
+    if (stack->frame_top == 0) {
         return sn_expr_error(expr, SN_ERROR_GENERIC);
     }
 
-    stack->frame_idx++;
+    stack->frame_top--;
     return sn_stack_init_top(stack, expr, locals, val_out);
 }
 
@@ -94,7 +93,7 @@ sn_expr_t *sn_frame_expr_next(sn_frame_t *f)
 
 sn_frame_t *sn_stack_top(sn_stack_t *stack)
 {
-    return &stack->frames[stack->frame_idx];
+    return &stack->frames[stack->frame_top];
 }
 
 sn_error_t
@@ -105,8 +104,8 @@ sn_stack_emplace(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_valu
 
 sn_error_t sn_stack_pop(sn_stack_t *stack)
 {
-    assert(stack->frame_idx >= 0);
-    stack->frame_idx--;
+    assert(stack->frame_top < SN_STACK_FRAME_COUNT);
+    stack->frame_top++;
     return SN_SUCCESS;
 }
 
@@ -368,7 +367,7 @@ sn_eval_expr_with_stack(sn_expr_t *expr,
                         sn_value_t *locals,
                         sn_value_t *val_out)
 {
-    stack->frame_idx++;
+    stack->frame_top--;
     sn_stack_init_top(stack, expr, locals, val_out);
 
     while (!sn_stack_is_empty(stack)) {
