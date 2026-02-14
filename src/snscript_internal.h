@@ -96,7 +96,6 @@ struct sn_value_st
 struct sn_call_frame_st
 {
     int arg_idx;
-    sn_value_t *args;
     sn_value_t *locals;
     sn_value_t fn;
 };
@@ -114,8 +113,7 @@ struct sn_frame_st
 
 struct sn_stack_st
 {
-    int value_count;
-    int cur_value_count;
+    int value_top;
     sn_value_t *values;
 
     int frame_count;

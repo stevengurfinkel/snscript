@@ -8,18 +8,17 @@
 
 sn_value_t *sn_stack_alloc_values(sn_stack_t *stack, int count)
 {
-    if (stack->cur_value_count + count > stack->value_count) {
+    if (stack->value_top - count < 0) {
         return NULL;
     }
 
-    int start = stack->cur_value_count;
-    stack->cur_value_count += count;
-    return &stack->values[start];
+    stack->value_top -= count;
+    return &stack->values[stack->value_top];
 }
 
 void sn_stack_free_values(sn_stack_t *stack, int count)
 {
-    stack->cur_value_count -= count;
+    stack->value_top += count;
 }
 
 bool sn_stack_is_empty(sn_stack_t *stack)
@@ -35,9 +34,8 @@ sn_stack_t *sn_stack_create(int frame_count, sn_scope_t *globals)
     stack->frame_count = frame_count;
     stack->frame_idx = -1;
 
-    stack->value_count = SN_STACK_VALUE_COUNT;
-    stack->values = calloc(stack->value_count, sizeof stack->values[0]);
-    stack->cur_value_count = 0;
+    stack->value_top = SN_STACK_VALUE_COUNT;
+    stack->values = calloc(stack->value_top, sizeof stack->values[0]);
 
     stack->globals = sn_stack_alloc_values(stack, globals->max_decl_count);
     sn_scope_init_consts(globals, stack->globals);
@@ -47,7 +45,7 @@ sn_stack_t *sn_stack_create(int frame_count, sn_scope_t *globals)
 
 void sn_stack_destroy(sn_stack_t *stack)
 {
-    free(stack->globals);
+    free(stack->values);
     free(stack);
 }
 
