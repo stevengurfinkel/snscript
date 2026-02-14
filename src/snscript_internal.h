@@ -104,7 +104,6 @@ struct sn_call_frame_st
 
 struct sn_frame_st
 {
-    sn_stack_t *stack;
     sn_expr_t *expr;
     sn_env_t *env;
     sn_value_t *val_out;
