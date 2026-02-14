@@ -77,7 +77,6 @@ typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_func_st sn_func_t;
 typedef struct sn_scope_st sn_scope_t;
 typedef struct sn_const_st sn_const_t;
-typedef struct sn_env_st sn_env_t;
 typedef struct sn_block_st sn_block_t;
 typedef struct sn_stack_st sn_stack_t;
 typedef struct sn_frame_st sn_frame_t;
@@ -98,14 +97,14 @@ struct sn_call_frame_st
 {
     int arg_idx;
     sn_value_t *args;
-    sn_env_t *env;
+    sn_value_t *locals;
     sn_value_t fn;
 };
 
 struct sn_frame_st
 {
     sn_expr_t *expr;
-    sn_env_t *env;
+    sn_value_t *locals;
     sn_value_t *val_out;
     sn_value_t cond;
     int cont_pos;
@@ -115,16 +114,16 @@ struct sn_frame_st
 
 struct sn_stack_st
 {
+    int value_count;
+    int cur_value_count;
+    sn_value_t *values;
+
     int frame_count;
     int frame_idx;
-    sn_frame_t frames[];
-};
 
-struct sn_env_st
-{
     sn_value_t *globals;
-    sn_value_t *locals;
-    sn_value_t backing[];
+
+    sn_frame_t frames[];
 };
 
 struct sn_symbol_st
@@ -229,8 +228,6 @@ extern sn_value_t sn_true;
 extern sn_value_t sn_false;
 
 sn_error_t sn_expr_error(sn_expr_t *expr, sn_error_t error);
-sn_error_t sn_expr_eval(sn_expr_t *expr, sn_env_t *env, sn_value_t *val_out);
-
 bool sn_symbol_equals_string(sn_symbol_t *sym, const char *str);
 sn_expr_t *sn_program_test_get_first_expr(sn_program_t *prog);
 sn_symbol_t *sn_program_get_symbol(sn_program_t *prog, const char *start, const char *end);
