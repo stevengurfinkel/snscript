@@ -110,7 +110,6 @@ struct sn_frame_st
     sn_value_t *val_out;
     sn_value_t cond;
     int cont_pos;
-    sn_expr_t *prev_expr;
     sn_expr_t *cont_child;
     sn_call_frame_t call;
 };
