@@ -16,11 +16,6 @@ sn_value_t *sn_stack_alloc_values(sn_stack_t *stack, int count)
     return &stack->values[stack->value_top];
 }
 
-void sn_stack_free_values(sn_stack_t *stack, int count)
-{
-    stack->value_top += count;
-}
-
 bool sn_stack_is_empty(sn_stack_t *stack)
 {
     return stack->frame_top == SN_STACK_FRAME_COUNT;
@@ -49,11 +44,6 @@ sn_value_t *sn_stack_alloc_locals(sn_stack_t *stack, sn_scope_t *locals)
     return sn_stack_alloc_values(stack, locals->max_decl_count);
 }
 
-void sn_stack_free_locals(sn_stack_t *stack, sn_scope_t *locals)
-{
-    sn_stack_free_values(stack, locals->max_decl_count);
-}
-
 sn_error_t
 sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
 {
@@ -61,6 +51,7 @@ sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_val
     memset(f, '\0', sizeof *f);
     f->expr = expr;
     f->locals = locals;
+    f->base_idx = stack->value_top;
     f->val_out = val_out;
     *val_out = sn_null;
     return SN_SUCCESS;
@@ -105,6 +96,7 @@ sn_stack_emplace(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_valu
 sn_error_t sn_stack_pop(sn_stack_t *stack)
 {
     assert(stack->frame_top < SN_STACK_FRAME_COUNT);
+    stack->value_top = stack->frames[stack->frame_top].base_idx;
     stack->frame_top++;
     return SN_SUCCESS;
 }
@@ -165,7 +157,6 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
 
         case SN_CALL_FRAME_POS_EVAL_BUILTIN:
             sn_error_t status = call->fn.builtin_fn(f->val_out, arg_count, call->locals);
-            sn_stack_free_values(stack, arg_count);
             if (status != SN_SUCCESS) {
                 return sn_expr_error(f->expr, status);
             }
@@ -175,7 +166,6 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
             if (f->cont_child != NULL) {
                 return sn_stack_push(stack, sn_frame_expr_next(f), call->locals, f->val_out);
             }
-            sn_stack_free_locals(stack, &call->fn.user_fn->scope);
             return sn_stack_pop(stack);
 
         default:
