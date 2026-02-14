@@ -121,7 +121,7 @@ struct sn_stack_st
 
     sn_value_t *globals;
 
-    sn_frame_t frames[];
+    sn_frame_t *frames;
 };
 
 struct sn_symbol_st

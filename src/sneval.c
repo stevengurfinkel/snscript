@@ -3,7 +3,7 @@
 #include <string.h>
 #include "snscript_internal.h"
 
-#define SN_STACK_SIZE 1024
+#define SN_STACK_FRAME_COUNT 1024
 #define SN_STACK_VALUE_COUNT 65536
 
 sn_value_t *sn_stack_alloc_values(sn_stack_t *stack, int count)
@@ -26,12 +26,10 @@ bool sn_stack_is_empty(sn_stack_t *stack)
     return stack->frame_idx < 0;
 }
 
-sn_stack_t *sn_stack_create(int frame_count, sn_scope_t *globals)
+void sn_stack_init(sn_stack_t *stack, sn_scope_t *globals)
 {
-    sn_stack_t *stack = NULL;
-    size_t size = sizeof stack[0] + frame_count * sizeof stack[0].frames[0];
-    stack = calloc(1, size);
-    stack->frame_count = frame_count;
+    stack->frame_count = SN_STACK_FRAME_COUNT;
+    stack->frames = calloc(stack->frame_count, sizeof stack->frames[0]);
     stack->frame_idx = -1;
 
     stack->value_top = SN_STACK_VALUE_COUNT;
@@ -39,14 +37,12 @@ sn_stack_t *sn_stack_create(int frame_count, sn_scope_t *globals)
 
     stack->globals = sn_stack_alloc_values(stack, globals->max_decl_count);
     sn_scope_init_consts(globals, stack->globals);
+}
 
-    return stack;
-};
-
-void sn_stack_destroy(sn_stack_t *stack)
+void sn_stack_deinit(sn_stack_t *stack)
 {
     free(stack->values);
-    free(stack);
+    free(stack->frames);
 }
 
 sn_value_t *sn_stack_alloc_locals(sn_stack_t *stack, sn_scope_t *locals)
@@ -405,9 +401,10 @@ sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *
 {
     *value_out = sn_null;
     sn_error_t status = SN_SUCCESS;
-    sn_stack_t *stack = sn_stack_create(SN_STACK_SIZE, &prog->globals);
+    sn_stack_t stack = {0};
+    sn_stack_init(&stack, &prog->globals);
 
-    status = sn_eval_expr_list_with_stack(prog->expr.child_head, stack, NULL, value_out);
+    status = sn_eval_expr_list_with_stack(prog->expr.child_head, &stack, NULL, value_out);
     if (status != SN_SUCCESS) {
         return status;
     }
@@ -416,11 +413,11 @@ sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *
         return SN_ERROR_MAIN_FN_MISSING;
     }
 
-    sn_value_t *main_val = sn_env_lookup_ref(stack, &prog->main_ref);
+    sn_value_t *main_val = sn_env_lookup_ref(&stack, &prog->main_ref);
     assert(main_val->type == SN_VALUE_TYPE_USER_FN);
     sn_func_t *func = main_val->user_fn;
 
-    sn_value_t *locals = sn_stack_alloc_locals(stack, &func->scope);
+    sn_value_t *locals = sn_stack_alloc_locals(&stack, &func->scope);
     if (func->param_count == 1) {
         if (arg != NULL) {
             locals[0] = *arg;
@@ -430,11 +427,11 @@ sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *
         }
     }
 
-    status = sn_eval_expr_list_with_stack(func->body, stack, locals, value_out);
+    status = sn_eval_expr_list_with_stack(func->body, &stack, locals, value_out);
     if (status != SN_SUCCESS) {
         return status;
     }
 
-    sn_stack_destroy(stack);
+    sn_stack_deinit(&stack);
     return SN_SUCCESS;
 }
