@@ -49,6 +49,17 @@ sn_frame_t *sn_stack_top(sn_stack_t *stack)
     return &stack->frames[stack->frame_top];
 }
 
+sn_value_t *sn_stack_alloc_temp(sn_stack_t *stack)
+{
+    sn_frame_t *f = sn_stack_top(stack);
+    if (f->cont_pos == 0) {
+        assert(f->base_idx == stack->value_top);
+        return sn_stack_alloc_values(stack, 1);
+    }
+
+    return &stack->values[f->base_idx - 1];
+}
+
 sn_error_t
 sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *locals, sn_value_t *val_out)
 {
@@ -183,33 +194,35 @@ sn_error_t sn_stack_eval_assign(sn_stack_t *stack)
     sn_frame_t *f = sn_stack_top(stack);
     sn_expr_t *dst = f->expr->child_head->next;
     sn_expr_t *src = dst->next;
+    sn_value_t *value = sn_stack_alloc_temp(stack);
 
     if (f->cont_pos == 0) {
         f->cont_pos++;
-        return sn_stack_push(stack, src, &f->cond);
+        return sn_stack_push(stack, src, value);
     }
 
-    *sn_stack_lookup_ref(stack, &dst->ref) = f->cond;
+    *sn_stack_lookup_ref(stack, &dst->ref) = *value;
     return sn_stack_pop(stack);
 }
 
 sn_error_t sn_stack_eval_if(sn_stack_t *stack)
 {
     sn_frame_t *f = sn_stack_top(stack);
-    sn_expr_t *cond = f->expr->child_head->next;
-    sn_expr_t *true_arm = cond->next;
+    sn_expr_t *cond_expr = f->expr->child_head->next;
+    sn_expr_t *true_arm = cond_expr->next;
     sn_expr_t *false_arm = true_arm->next; // maybe NULL
+    sn_value_t *cond = sn_stack_alloc_temp(stack);
 
     if (f->cont_pos == 0) {
         f->cont_pos++;
-        return sn_stack_push(stack, cond, &f->cond);
+        return sn_stack_push(stack, cond_expr, cond);
     }
 
-    if (f->cond.type != SN_VALUE_TYPE_BOOLEAN) {
-        return sn_expr_error(cond, SN_ERROR_WRONG_VALUE_TYPE);
+    if (cond->type != SN_VALUE_TYPE_BOOLEAN) {
+        return sn_expr_error(cond_expr, SN_ERROR_WRONG_VALUE_TYPE);
     }
 
-    if (f->cond.i) {
+    if (cond->i) {
         return sn_stack_emplace(stack, true_arm, f->val_out);
     }
 
@@ -285,26 +298,31 @@ sn_error_t sn_stack_eval_while(sn_stack_t *stack)
     sn_frame_t *f = sn_stack_top(stack);
     sn_expr_t *cond_expr = f->expr->child_head->next;
     sn_expr_t *body = cond_expr->next; // maybe null
+    sn_value_t *cond = sn_stack_alloc_temp(stack);
 
     if (f->cont_pos == 0) {
         f->cont_pos++;
-        return sn_stack_push(stack, cond_expr, &f->cond);
     }
 
-    if (f->cond.type != SN_VALUE_TYPE_BOOLEAN) {
+    if (f->cont_pos == 1) {
+        f->cont_pos++;
+        return sn_stack_push(stack, cond_expr, cond);
+    }
+
+    if (cond->type != SN_VALUE_TYPE_BOOLEAN) {
         return sn_expr_error(cond_expr, SN_ERROR_WRONG_VALUE_TYPE);
     }
 
-    if (!f->cond.i) {
+    if (!cond->i) {
         return sn_stack_pop(stack);
     }
 
     if (body != NULL) {
-        f->cont_pos = 0;
+        f->cont_pos = 1;
         return sn_stack_push(stack, body, f->val_out);
     }
 
-    return sn_frame_goto(f, 0, NULL);
+    return sn_frame_goto(f, 1, NULL);
 }
 
 sn_error_t sn_stack_dispatch(sn_stack_t *stack)
