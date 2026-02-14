@@ -97,7 +97,6 @@ struct sn_call_frame_st
 {
     int arg_idx;
     sn_value_t *locals;
-    sn_value_t fn;
 };
 
 struct sn_frame_st

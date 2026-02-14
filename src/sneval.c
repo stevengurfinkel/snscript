@@ -129,22 +129,23 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
     sn_expr_t *fn_expr = f->expr->child_head;
     sn_call_frame_t *call = &f->call;
     int arg_count = f->expr->child_count - 1;
+    sn_value_t *fn = sn_stack_alloc_temp(stack);
 
     switch (f->cont_pos) {
         case SN_CALL_FRAME_POS_EVAL_FN:
             f->cont_pos = SN_CALL_FRAME_POS_ALLOC_ENV;
-            return sn_stack_push(stack, fn_expr, &call->fn);
+            return sn_stack_push(stack, fn_expr, fn);
 
         case SN_CALL_FRAME_POS_ALLOC_ENV:
-            if (call->fn.type == SN_VALUE_TYPE_USER_FN) {
-                sn_func_t *func = call->fn.user_fn;
+            if (fn->type == SN_VALUE_TYPE_USER_FN) {
+                sn_func_t *func = fn->user_fn;
                 if (arg_count != func->param_count) {
                     return sn_expr_error(f->expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
                 }
 
                 call->locals = sn_stack_alloc_locals(stack, &func->scope);
             }
-            else if (call->fn.type == SN_VALUE_TYPE_BUILTIN_FN) {
+            else if (fn->type == SN_VALUE_TYPE_BUILTIN_FN) {
                 call->locals = sn_stack_alloc_values(stack, arg_count);
             }
             else {
@@ -162,14 +163,14 @@ sn_error_t sn_stack_eval_call(sn_stack_t *stack)
 
             f->locals = call->locals;
 
-            if (call->fn.type == SN_VALUE_TYPE_BUILTIN_FN) {
+            if (fn->type == SN_VALUE_TYPE_BUILTIN_FN) {
                 return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_BUILTIN, NULL);
             }
 
-            return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, call->fn.user_fn->body);
+            return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, fn->user_fn->body);
 
         case SN_CALL_FRAME_POS_EVAL_BUILTIN:
-            sn_error_t status = call->fn.builtin_fn(f->val_out, arg_count, f->locals);
+            sn_error_t status = fn->builtin_fn(f->val_out, arg_count, f->locals);
             if (status != SN_SUCCESS) {
                 return sn_expr_error(f->expr, status);
             }
