@@ -96,14 +96,14 @@ struct sn_value_st
 struct sn_call_frame_st
 {
     int arg_idx;
-    sn_value_t *locals;
+    int locals_idx;
 };
 
 struct sn_frame_st
 {
     sn_expr_t *expr;
-    sn_value_t *locals;
     sn_value_t *val_out;
+    int locals_idx;
     int base_idx;
     int cont_pos;
     sn_expr_t *cont_child;
