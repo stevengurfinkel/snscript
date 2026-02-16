@@ -99,12 +99,6 @@ sn_expr_t *sn_frame_expr_next(sn_frame_t *f)
     return expr;
 }
 
-sn_error_t
-sn_stack_emplace(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *val_out)
-{
-    return sn_stack_init_top(stack, expr, sn_stack_top(stack)->locals_idx, val_out);
-}
-
 sn_error_t sn_stack_pop(sn_stack_t *stack)
 {
     assert(stack->frame_top < SN_STACK_FRAME_COUNT);
@@ -219,17 +213,19 @@ sn_error_t sn_stack_eval_if(sn_stack_t *stack)
         f->cont_pos++;
         return sn_stack_push(stack, cond_expr, cond);
     }
+    else if (f->cont_pos == 1) {
+        if (cond->type != SN_VALUE_TYPE_BOOLEAN) {
+            return sn_expr_error(cond_expr, SN_ERROR_WRONG_VALUE_TYPE);
+        }
 
-    if (cond->type != SN_VALUE_TYPE_BOOLEAN) {
-        return sn_expr_error(cond_expr, SN_ERROR_WRONG_VALUE_TYPE);
-    }
+        f->cont_pos++;
+        if (cond->i) {
+            return sn_stack_push(stack, true_arm, f->val_out);
+        }
 
-    if (cond->i) {
-        return sn_stack_emplace(stack, true_arm, f->val_out);
-    }
-
-    if (false_arm != NULL) {
-        return sn_stack_emplace(stack, false_arm, f->val_out);
+        if (false_arm != NULL) {
+            return sn_stack_push(stack, false_arm, f->val_out);
+        }
     }
 
     return sn_stack_pop(stack);
