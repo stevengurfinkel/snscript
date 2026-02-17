@@ -165,7 +165,25 @@ sn_error_t sn_cur_parse_expr_list(sn_program_t *prog, sn_expr_t *expr)
         expr->child_count++;
     }
 
-    return status;
+    if (expr->child_count == 0 || status != SN_SUCCESS) {
+        return status;
+    }
+
+    sn_expr_t *expr_array = calloc(expr->child_count, sizeof expr[0]);
+    child = expr->child_head;
+
+    for (int i = 0; i < expr->child_count; i++) {
+        sn_expr_t *next_child = child->next;
+        expr_array[i] = *child;
+        if (i > 0) {
+            expr_array[i - 1].next = &expr_array[i];
+        }
+        free(child);
+        child = next_child;
+    }
+
+    expr->child_head = expr_array;
+    return SN_SUCCESS;
 }
 
 sn_error_t sn_program_parse(sn_program_t *prog)
