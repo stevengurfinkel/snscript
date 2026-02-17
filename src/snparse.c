@@ -208,13 +208,14 @@ sn_error_t sn_program_reorder_infix_expr(sn_program_t *prog, sn_expr_t *expr)
         return sn_expr_error(expr, SN_ERROR_INFIX_EXPR_NOT_3_ELEMENTS);
     }
 
-    sn_expr_t *exprs[3] = {expr->child_head,
-                           expr->child_head->next,
-                           expr->child_head->next->next};
+    sn_expr_t *exprs = expr->child_head;
 
-    expr->child_head = exprs[1];
-    expr->child_head->next = exprs[0];
-    expr->child_head->next->next = exprs[2];
+    sn_expr_t temp = exprs[0];
+    exprs[0] = exprs[1];
+    exprs[1] = temp;
+
+    exprs[0].next = &exprs[1];
+    exprs[1].next = &exprs[2];
     return SN_SUCCESS;
 }
 

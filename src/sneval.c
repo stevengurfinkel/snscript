@@ -266,30 +266,26 @@ sn_expr_t *sn_frame_prev_child(sn_frame_t *f)
 sn_error_t sn_stack_eval_andor(sn_stack_t *stack)
 {
     sn_frame_t *f = sn_stack_top(stack);
+    sn_value_t *val = f->val_out;
+
     if (f->cont_pos == 0) {
-        f->cont_child = f->expr->child_head->next;
+        val->type = SN_VALUE_TYPE_BOOLEAN;
+        val->i = sn_frame_andor_default_value(f);
         f->cont_pos = 1;
-        f->val_out->type = SN_VALUE_TYPE_BOOLEAN;
-        f->val_out->i = sn_frame_andor_default_value(f);
     }
 
-    if (f->cont_child != NULL) {
-        if (f->val_out->type != SN_VALUE_TYPE_BOOLEAN) {
-            return sn_expr_error(sn_frame_prev_child(f), SN_ERROR_WRONG_VALUE_TYPE);
-        }
+    sn_expr_t *child = &f->expr->child_head[f->cont_pos];
 
-        if (f->val_out->i != sn_frame_andor_default_value(f)) {
-            return sn_stack_pop(stack);
-        }
-
-        return sn_stack_push(stack, sn_frame_expr_next(f), f->val_out);
+    if (val->type != SN_VALUE_TYPE_BOOLEAN) {
+        return sn_expr_error(child - 1, SN_ERROR_WRONG_VALUE_TYPE);
     }
 
-    if (f->val_out->type != SN_VALUE_TYPE_BOOLEAN) {
-        return sn_expr_error(sn_frame_prev_child(f), SN_ERROR_WRONG_VALUE_TYPE);
+    if (val->i != sn_frame_andor_default_value(f) || f->cont_pos == f->expr->child_count) {
+        return sn_stack_pop(stack);
     }
 
-    return sn_stack_pop(stack);
+    f->cont_pos++;
+    return sn_stack_push(stack, child, val);
 }
 
 sn_error_t sn_stack_eval_while(sn_stack_t *stack)
