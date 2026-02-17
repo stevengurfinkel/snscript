@@ -8,12 +8,13 @@
 
 int sn_stack_alloc_values(sn_stack_t *stack, int count)
 {
-    if (stack->value_top - count < 0) {
+    if (stack->push_count == SN_STACK_VALUE_COUNT) {
         return -1;
     }
 
-    stack->value_top -= count;
-    return stack->value_top;
+    int start = stack->push_count;
+    stack->push_count += count;
+    return start;
 }
 
 bool sn_stack_is_empty(sn_stack_t *stack)
@@ -26,8 +27,8 @@ void sn_stack_init(sn_stack_t *stack, sn_scope_t *globals)
     stack->frame_top = SN_STACK_FRAME_COUNT;
     stack->frames = calloc(stack->frame_top, sizeof stack->frames[0]);
 
-    stack->value_top = SN_STACK_VALUE_COUNT;
-    stack->values = calloc(stack->value_top, sizeof stack->values[0]);
+    stack->push_count = 0;
+    stack->values = calloc(SN_STACK_VALUE_COUNT, sizeof stack->values[0]);
 
     stack->globals = &stack->values[sn_stack_alloc_values(stack, globals->max_decl_count)];
     sn_scope_init_consts(globals, stack->globals);
@@ -53,11 +54,11 @@ sn_value_t *sn_stack_alloc_temp(sn_stack_t *stack)
 {
     sn_frame_t *f = sn_stack_top(stack);
     if (f->cont_pos == 0) {
-        assert(f->base_idx == stack->value_top);
+        assert(f->base_push_count == stack->push_count);
         return &stack->values[sn_stack_alloc_values(stack, 1)];
     }
 
-    return &stack->values[f->base_idx - 1];
+    return &stack->values[f->base_push_count];
 }
 
 sn_error_t
@@ -67,7 +68,7 @@ sn_stack_init_top(sn_stack_t *stack, sn_expr_t *expr, int locals_idx, sn_value_t
     memset(f, '\0', sizeof *f);
     f->expr = expr;
     f->locals_idx = locals_idx;
-    f->base_idx = stack->value_top;
+    f->base_push_count = stack->push_count;
     f->val_out = val_out;
     *val_out = sn_null;
     return SN_SUCCESS;
@@ -102,7 +103,7 @@ sn_expr_t *sn_frame_expr_next(sn_frame_t *f)
 sn_error_t sn_stack_pop(sn_stack_t *stack)
 {
     assert(stack->frame_top < SN_STACK_FRAME_COUNT);
-    stack->value_top = stack->frames[stack->frame_top].base_idx;
+    stack->push_count = stack->frames[stack->frame_top].base_push_count;
     stack->frame_top++;
     return SN_SUCCESS;
 }

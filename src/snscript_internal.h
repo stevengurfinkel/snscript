@@ -104,7 +104,7 @@ struct sn_frame_st
     sn_expr_t *expr;
     sn_value_t *val_out;
     int locals_idx;
-    int base_idx;
+    int base_push_count;
     int cont_pos;
     sn_expr_t *cont_child;
     sn_call_frame_t call;
@@ -112,7 +112,7 @@ struct sn_frame_st
 
 struct sn_stack_st
 {
-    int value_top;
+    int push_count;
     sn_value_t *values;
     sn_value_t *globals;
 
