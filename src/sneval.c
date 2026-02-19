@@ -120,11 +120,6 @@ sn_value_t *sn_stack_lookup_ref(sn_stack_t *stack, sn_ref_t *ref)
 
 sn_error_t sn_frame_check_call(sn_stack_t *stack, sn_frame_t *f, sn_value_t *fn)
 {
-    // only do checks when cont_pos is 1
-    if (f->cont_pos != 1) {
-        return SN_SUCCESS;
-    }
-
     int arg_count = f->expr->child_count - 1;
 
     if (fn->type == SN_VALUE_TYPE_USER_FN) {
