@@ -63,15 +63,6 @@ typedef enum sn_scope_type_en
     SN_SCOPE_TYPE_LOCAL,
 } sn_scope_type_t;
 
-typedef enum sn_call_frame_pos_en
-{
-    SN_CALL_FRAME_POS_EVAL_FN = 0,
-    SN_CALL_FRAME_POS_ALLOC_ENV,
-    SN_CALL_FRAME_POS_EVAL_ARGS,
-    SN_CALL_FRAME_POS_EVAL_BUILTIN,
-    SN_CALL_FRAME_POS_EVAL_USER,
-} sn_call_frame_pos_t;
-
 typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_func_st sn_func_t;
@@ -162,6 +153,7 @@ struct sn_func_st
     int param_count;
     sn_scope_t scope;
     sn_symbol_t *name;
+    int body_count;
     sn_expr_t *body;
 };
 

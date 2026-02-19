@@ -308,6 +308,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     }
 
     func->body = proto->next;
+    func->body_count = expr->child_count - 2;
 
     for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
         status = sn_expr_build(expr, &func->scope);

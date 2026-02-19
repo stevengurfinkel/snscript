@@ -118,72 +118,91 @@ sn_value_t *sn_stack_lookup_ref(sn_stack_t *stack, sn_ref_t *ref)
     return &stack->values[sn_stack_top(stack)->locals_idx + ref->index];
 }
 
+sn_error_t sn_frame_check_call(sn_stack_t *stack, sn_frame_t *f, sn_value_t *fn)
+{
+    // only do checks when cont_pos is 1
+    if (f->cont_pos != 1) {
+        return SN_SUCCESS;
+    }
+
+    int arg_count = f->expr->child_count - 1;
+
+    if (fn->type == SN_VALUE_TYPE_USER_FN) {
+        sn_func_t *func = fn->user_fn;
+        if (arg_count != func->param_count) {
+            return sn_expr_error(f->expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
+        }
+
+        // TODO: check for overflow
+        stack->push_count += func->scope.max_decl_count - func->param_count;
+    }
+    else if (fn->type != SN_VALUE_TYPE_BUILTIN_FN) {
+        return sn_expr_error(f->expr->child_head, SN_ERROR_CALLEE_NOT_A_FN);
+    }
+
+    return SN_SUCCESS;
+}
+
+sn_error_t
+sn_stack_eval_call_body(sn_stack_t *stack,
+                        sn_frame_t *f,
+                        int call_value_count,
+                        sn_value_t *call_values)
+{
+    sn_error_t status = SN_SUCCESS;
+    int body_idx = f->cont_pos++ - call_value_count;
+    sn_value_t *fn = &call_values[0];
+
+    if (fn->type == SN_VALUE_TYPE_USER_FN) {
+        sn_func_t *func = fn->user_fn;
+        if (body_idx < func->body_count) {
+            return sn_stack_push(stack, &func->body[body_idx], f->val_out);
+        }
+    }
+    else {
+        status = fn->builtin_fn(f->val_out,
+                                call_value_count - 1,
+                                call_values + 1);
+        if (status != SN_SUCCESS) {
+            return sn_expr_error(f->expr, status);
+        }
+    }
+
+    return sn_stack_pop(stack);
+}
+
 sn_error_t sn_stack_eval_call(sn_stack_t *stack)
 {
     sn_frame_t *f = sn_stack_top(stack);
     sn_expr_t *fn_expr = f->expr->child_head;
-    sn_call_frame_t *call = &f->call;
-    int arg_count = f->expr->child_count - 1;
-    sn_value_t *fn = sn_stack_alloc_temp(stack);
-    sn_error_t status = SN_ERROR_GENERIC;
+    int call_value_count = f->expr->child_count;
 
-    switch (f->cont_pos) {
-        case SN_CALL_FRAME_POS_EVAL_FN:
-            f->cont_pos = SN_CALL_FRAME_POS_ALLOC_ENV;
-            return sn_stack_push(stack, fn_expr, fn);
+    sn_value_t *call_values = &stack->values[f->base_push_count];
 
-        case SN_CALL_FRAME_POS_ALLOC_ENV:
-            if (fn->type == SN_VALUE_TYPE_USER_FN) {
-                sn_func_t *func = fn->user_fn;
-                if (arg_count != func->param_count) {
-                    return sn_expr_error(f->expr, SN_ERROR_WRONG_ARG_COUNT_IN_CALL);
-                }
-
-                call->locals_idx = sn_stack_alloc_locals(stack, &func->scope);
-            }
-            else if (fn->type == SN_VALUE_TYPE_BUILTIN_FN) {
-                call->locals_idx = sn_stack_alloc_values(stack, arg_count);
-            }
-            else {
-                return sn_expr_error(fn_expr, SN_ERROR_CALLEE_NOT_A_FN);
-            }
-
-            return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_ARGS, fn_expr->next);
-
-        case SN_CALL_FRAME_POS_EVAL_ARGS:
-            if (f->cont_child != NULL) {
-                return sn_stack_push(stack,
-                                     sn_frame_expr_next(f),
-                                     &stack->values[call->locals_idx + call->arg_idx++]);
-            }
-
-            f->locals_idx = call->locals_idx;
-
-            if (fn->type == SN_VALUE_TYPE_BUILTIN_FN) {
-                return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_BUILTIN, NULL);
-            }
-
-            return sn_frame_goto(f, SN_CALL_FRAME_POS_EVAL_USER, fn->user_fn->body);
-
-        case SN_CALL_FRAME_POS_EVAL_BUILTIN:
-            status = fn->builtin_fn(f->val_out, arg_count, &stack->values[f->locals_idx]);
-            if (status != SN_SUCCESS) {
-                return sn_expr_error(f->expr, status);
-            }
-            return sn_stack_pop(stack);
-
-        case SN_CALL_FRAME_POS_EVAL_USER:
-            if (f->cont_child != NULL) {
-                return sn_stack_push(stack, sn_frame_expr_next(f), f->val_out);
-            }
-            return sn_stack_pop(stack);
-
-        default:
-            break;
+    if (f->cont_pos == 0) {
+        // TODO: check for overflow
+        stack->push_count += call_value_count;
+        f->cont_pos++;
+        return sn_stack_push(stack, fn_expr, call_values);
+    }
+    else if (f->cont_pos == 1) {
+        sn_error_t status = sn_frame_check_call(stack, f, call_values);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
     }
 
-    abort();
-    return SN_ERROR_GENERIC;
+    if (f->cont_pos > 0 && f->cont_pos < call_value_count) {
+        sn_value_t *arg_value = &call_values[f->cont_pos];
+        sn_expr_t *expr_value = fn_expr + f->cont_pos;
+        f->cont_pos++;
+        return sn_stack_push(stack, expr_value, arg_value);
+    }
+    else if (f->cont_pos == call_value_count) {
+        f->locals_idx = f->base_push_count + 1;
+    }
+
+    return sn_stack_eval_call_body(stack, f, call_value_count, call_values);
 }
 
 sn_error_t sn_stack_eval_assign(sn_stack_t *stack)
