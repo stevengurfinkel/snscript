@@ -1295,6 +1295,27 @@ void test_main(void)
     sn_value_destroy(arg);
 }
 
+void test_pure(void)
+{
+    sn_value_t *arg = sn_value_create();
+    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 3, 3, NULL,
+                "(let x 0)\n"
+                "(pure (inc-x a)\n"
+                "  {x = {a + x}})\n"
+                "(fn (main i)\n"
+                "  (inc-x i))\n");
+
+//    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 0, 0, NULL,
+//                "(fn (foo a b)\n"
+//                "  (+ a b))\n"
+//                "(pure (bar c)\n"
+//                "  (foo 0 c))\n"
+//                "(fn (main i)\n"
+//                "  (bar i))\n");
+
+    sn_value_destroy(arg);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1340,6 +1361,7 @@ int main(int argc, char **argv)
     test_and_or();
     test_while();
     test_main();
+    test_pure();
     printf("PASSED\n");
     return 0;
 }

@@ -37,6 +37,7 @@ typedef enum sn_rtype_st
     SN_RTYPE_AND_KEYW,
     SN_RTYPE_OR_KEYW,
     SN_RTYPE_WHILE_KEYW,
+    SN_RTYPE_PURE_KEYW,
 
     SN_RTYPE_LET_EXPR,
     SN_RTYPE_FN_EXPR,
@@ -47,6 +48,7 @@ typedef enum sn_rtype_st
     SN_RTYPE_AND_EXPR,
     SN_RTYPE_OR_EXPR,
     SN_RTYPE_WHILE_EXPR,
+    SN_RTYPE_PURE_EXPR,
 
     SN_RTYPE_VAR,
     SN_RTYPE_LITERAL,
@@ -130,6 +132,7 @@ struct sn_scope_st
     sn_expr_t *decl_head;
     int cur_decl_count;
     int max_decl_count;
+    bool is_pure;
 };
 
 struct sn_block_st
@@ -141,6 +144,7 @@ struct sn_block_st
 
 struct sn_func_st
 {
+    bool is_pure;
     int param_count;
     sn_scope_t scope;
     sn_symbol_t *name;
@@ -192,6 +196,7 @@ struct sn_program_st
     sn_symbol_t *sn_and;
     sn_symbol_t *sn_or;
     sn_symbol_t *sn_while;
+    sn_symbol_t *sn_pure;
 
     // entry point to be defined by script
     sn_symbol_t *sn_main;

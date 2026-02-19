@@ -41,6 +41,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     else if (sym == prog->sn_while) {
         expr->rtype = SN_RTYPE_WHILE_KEYW;
     }
+    else if (sym == prog->sn_pure) {
+        expr->rtype = SN_RTYPE_PURE_KEYW;
+    }
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
@@ -173,6 +176,10 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
             expr->rtype = SN_RTYPE_WHILE_EXPR;
             return sn_while_expr_check(expr);
 
+        case SN_RTYPE_PURE_KEYW:
+            expr->rtype = SN_RTYPE_PURE_EXPR;
+            return sn_fn_expr_check(expr);
+
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
@@ -182,6 +189,7 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
         case SN_RTYPE_AND_EXPR:
         case SN_RTYPE_OR_EXPR:
         case SN_RTYPE_WHILE_EXPR:
+        case SN_RTYPE_PURE_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -196,7 +204,8 @@ bool sn_rtype_only_in_fn(sn_rtype_t rtype)
 {
     return rtype != SN_RTYPE_CONST_EXPR &&
            rtype != SN_RTYPE_LET_EXPR &&
-           rtype != SN_RTYPE_FN_EXPR;
+           rtype != SN_RTYPE_FN_EXPR &&
+           rtype != SN_RTYPE_PURE_EXPR;
 }
 
 sn_error_t sn_list_set_rtype(sn_expr_t *expr)
@@ -271,7 +280,10 @@ sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
 sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
 {
     sn_func_t *func = calloc(sizeof *func, 1);
-    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
+    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW ||
+           expr->child_head->rtype == SN_RTYPE_PURE_KEYW);
+
+    func->is_pure = expr->child_head->rtype == SN_RTYPE_PURE_KEYW;
 
     sn_expr_t *proto = expr->child_head->next;
     assert(proto->rtype == SN_RTYPE_CALL);
@@ -287,6 +299,7 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     val->user_fn = func;
 
     func->scope.parent = parent_scope;
+    func->scope.is_pure = func->is_pure;
 
     // go through all of the parameters
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
@@ -403,6 +416,10 @@ sn_error_t sn_expr_build_assign(sn_expr_t *expr, sn_scope_t *scope)
         return sn_expr_error(dst, SN_ERROR_EXPR_BAD_DEST);
     }
 
+    if (scope->is_pure && dst->ref.type == SN_SCOPE_TYPE_GLOBAL) {
+        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    }
+
     return sn_expr_build(src, scope);
 }
 
@@ -423,6 +440,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_AND_KEYW:
         case SN_RTYPE_OR_KEYW:
         case SN_RTYPE_WHILE_KEYW:
+        case SN_RTYPE_PURE_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -430,6 +448,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
             return sn_expr_build_let(expr, scope);
 
         case SN_RTYPE_FN_EXPR:
+        case SN_RTYPE_PURE_EXPR:
             return sn_expr_create_fn(expr, scope);
 
         case SN_RTYPE_IF_EXPR:

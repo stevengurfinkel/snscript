@@ -39,6 +39,7 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(WRONG_VALUE_TYPE);
         SN_ERROR_CASE(WRONG_ARG_COUNT_IN_CALL);
         SN_ERROR_CASE(LAZY_EXPR_TOO_SHORT);
+        SN_ERROR_CASE(NOT_ALLOWED_IN_PURE_FN);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;
@@ -136,6 +137,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_and = sn_program_default_symbol(prog, "&&");
     prog->sn_or = sn_program_default_symbol(prog, "||");
     prog->sn_while = sn_program_default_symbol(prog, "while");
+    prog->sn_pure = sn_program_default_symbol(prog, "pure");
 
     // entry point defined by script
     prog->sn_main = sn_program_default_symbol(prog, "main");
