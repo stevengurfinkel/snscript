@@ -196,6 +196,7 @@ struct sn_program_st
     // entry point to be defined by script
     sn_symbol_t *sn_main;
     sn_ref_t main_ref;
+    sn_func_t *main_func;
 
     sn_scope_t globals;
 };

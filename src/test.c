@@ -1264,11 +1264,11 @@ void test_while(void)
 void test_main(void)
 {
     sn_value_t *arg = sn_value_create();
-    error_run_main(SN_ERROR_MAIN_FN_MISSING, 0, 0, NULL, arg,
-                   "(let x 0)\n"
-                   "(fn (foo) {x + 1})\n");
+    error_build(SN_ERROR_MAIN_FN_MISSING, 0, 0, NULL,
+                "(let x 0)\n"
+                "(fn (foo) {x + 1})\n");
 
-    error_run_main(SN_ERROR_MAIN_FN_MISSING, 0, 0, NULL, arg,
+    error_build(SN_ERROR_MAIN_FN_MISSING, 0, 0, NULL,
                    "(fn (foo)\n"
                    "  (let main 0)\n"
                    "  {main + main})\n");

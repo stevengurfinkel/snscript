@@ -464,5 +464,15 @@ sn_error_t sn_program_build(sn_program_t *prog)
     if (status != SN_SUCCESS) {
         return status;
     }
-    return sn_expr_build(&prog->expr, &prog->globals);
+
+    status = sn_expr_build(&prog->expr, &prog->globals);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+
+    if (prog->main_ref.type == SN_SCOPE_TYPE_INVALID) {
+        return SN_ERROR_MAIN_FN_MISSING;
+    }
+
+    return SN_SUCCESS;
 }

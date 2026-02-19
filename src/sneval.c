@@ -409,9 +409,7 @@ sn_error_t sn_program_run_main(sn_program_t *prog, sn_value_t *arg, sn_value_t *
         return status;
     }
 
-    if (prog->main_ref.type == SN_SCOPE_TYPE_INVALID) {
-        return SN_ERROR_MAIN_FN_MISSING;
-    }
+    assert(prog->main_ref.type == SN_SCOPE_TYPE_GLOBAL);
 
     sn_value_t *main_val = sn_stack_lookup_ref(&stack, &prog->main_ref);
     assert(main_val->type == SN_VALUE_TYPE_USER_FN);
