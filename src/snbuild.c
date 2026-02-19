@@ -419,6 +419,10 @@ sn_error_t sn_expr_build_var(sn_expr_t *expr, sn_scope_t *scope)
         return sn_expr_error(expr, status);
     }
 
+    if (scope->is_pure && expr->ref.type == SN_SCOPE_TYPE_GLOBAL && !expr->ref.is_const) {
+        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    }
+
     return status;
 }
 
@@ -449,10 +453,6 @@ sn_error_t sn_expr_build_assign(sn_expr_t *expr, sn_scope_t *scope)
 
     if (dst->ref.is_const) {
         return sn_expr_error(dst, SN_ERROR_EXPR_BAD_DEST);
-    }
-
-    if (scope->is_pure && dst->ref.type == SN_SCOPE_TYPE_GLOBAL) {
-        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
     }
 
     return sn_expr_build(src, scope);

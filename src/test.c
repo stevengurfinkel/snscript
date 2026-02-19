@@ -1298,7 +1298,7 @@ void test_main(void)
 void test_pure(void)
 {
     sn_value_t *arg = sn_value_create();
-    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 3, 3, NULL,
+    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 3, 4, "x",
                 "(let x 0)\n"
                 "(pure (inc-x a)\n"
                 "  {x = {a + x}})\n"
