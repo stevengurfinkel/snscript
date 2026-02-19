@@ -71,7 +71,6 @@ typedef struct sn_const_st sn_const_t;
 typedef struct sn_block_st sn_block_t;
 typedef struct sn_stack_st sn_stack_t;
 typedef struct sn_frame_st sn_frame_t;
-typedef struct sn_call_frame_st sn_call_frame_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
 struct sn_value_st
@@ -84,12 +83,6 @@ struct sn_value_st
     };
 };
 
-struct sn_call_frame_st
-{
-    int arg_idx;
-    int locals_idx;
-};
-
 struct sn_frame_st
 {
     sn_expr_t *expr;
@@ -97,7 +90,6 @@ struct sn_frame_st
     int locals_idx;
     int base_push_count;
     int cont_pos;
-    sn_call_frame_t call;
 };
 
 struct sn_stack_st
