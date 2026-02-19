@@ -265,6 +265,41 @@ sn_error_t sn_expr_set_rtype(sn_expr_t *expr)
     return SN_ERROR_GENERIC;
 }
 
+sn_error_t sn_expr_check_fn_call(sn_expr_t *fn_expr, sn_scope_t *scope)
+{
+    if (!scope->is_pure) {
+        return SN_SUCCESS;
+    }
+
+    // function calls must be a direct variable
+    if (fn_expr->rtype != SN_RTYPE_VAR) {
+        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    }
+
+    // functions are global
+    sn_ref_t *ref = &fn_expr->ref;
+    if (ref->type != SN_SCOPE_TYPE_GLOBAL) {
+        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    }
+
+    // lookup in globals
+    sn_value_t *val = sn_scope_get_const_value(scope->parent, ref);
+    assert(val != NULL);
+
+    if (val->type == SN_VALUE_TYPE_BUILTIN_FN) {
+        // assume that none of the builtin fns have side effects
+        return SN_SUCCESS;
+    }
+    else if (val->type == SN_VALUE_TYPE_USER_FN) {
+        if (val->user_fn->is_pure) {
+            return SN_SUCCESS;
+        }
+        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
 {
     for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
@@ -274,7 +309,7 @@ sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
         }
     }
 
-    return SN_SUCCESS;
+    return sn_expr_check_fn_call(expr->child_head, scope);
 }
 
 sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)

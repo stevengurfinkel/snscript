@@ -21,6 +21,17 @@ sn_value_t *sn_scope_create_const(sn_scope_t *scope, sn_ref_t *ref)
     return &c->value;
 }
 
+sn_value_t *sn_scope_get_const_value(sn_scope_t *scope, sn_ref_t *ref)
+{
+    for (sn_const_t *c = scope->head_const; c != NULL; c = c->next) {
+        if (c->idx == ref->index) {
+            return &c->value;
+        }
+    }
+
+    return NULL;
+}
+
 void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values)
 {
     for (sn_const_t *c = scope->head_const; c != NULL; c = c->next) {

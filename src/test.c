@@ -1305,13 +1305,13 @@ void test_pure(void)
                 "(fn (main i)\n"
                 "  (inc-x i))\n");
 
-//    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 0, 0, NULL,
-//                "(fn (foo a b)\n"
-//                "  (+ a b))\n"
-//                "(pure (bar c)\n"
-//                "  (foo 0 c))\n"
-//                "(fn (main i)\n"
-//                "  (bar i))\n");
+    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 4, 4, "foo",
+                "(fn (foo a b)\n"
+                "  (+ a b))\n"
+                "(pure (bar c)\n"
+                "  (foo 0 c))\n"
+                "(fn (main i)\n"
+                "  (bar i))\n");
 
     sn_value_destroy(arg);
 }
