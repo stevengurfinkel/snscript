@@ -97,7 +97,6 @@ struct sn_frame_st
     int locals_idx;
     int base_push_count;
     int cont_pos;
-    sn_expr_t *cont_child;
     sn_call_frame_t call;
 };
 

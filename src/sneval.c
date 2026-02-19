@@ -86,18 +86,10 @@ sn_stack_push(sn_stack_t *stack, sn_expr_t *expr, sn_value_t *val_out)
     return sn_stack_init_top(stack, expr, locals_idx, val_out);
 }
 
-sn_error_t sn_frame_goto(sn_frame_t *f, int pos, sn_expr_t *expr)
+sn_error_t sn_frame_goto(sn_frame_t *f, int pos)
 {
     f->cont_pos = pos;
-    f->cont_child = expr;
     return SN_SUCCESS;
-}
-
-sn_expr_t *sn_frame_expr_next(sn_frame_t *f)
-{
-    sn_expr_t *expr = f->cont_child;
-    f->cont_child = expr->next;
-    return expr;
 }
 
 sn_error_t sn_stack_pop(sn_stack_t *stack)
@@ -250,12 +242,11 @@ sn_error_t sn_stack_eval_do(sn_stack_t *stack)
 {
     sn_frame_t *f = sn_stack_top(stack);
     if (f->cont_pos == 0) {
-        f->cont_child = f->expr->child_head->next;
         f->cont_pos = 1;
     }
 
-    if (f->cont_child != NULL) {
-        return sn_stack_push(stack, sn_frame_expr_next(f), f->val_out);
+    if (f->cont_pos < f->expr->child_count) {
+        return sn_stack_push(stack, &f->expr->child_head[f->cont_pos++], f->val_out);
     }
 
     return sn_stack_pop(stack);
@@ -266,15 +257,6 @@ int sn_frame_andor_default_value(sn_frame_t *f)
     sn_rtype_t rtype = f->expr->rtype;
     assert(rtype == SN_RTYPE_AND_EXPR || rtype == SN_RTYPE_OR_EXPR);
     return rtype == SN_RTYPE_AND_EXPR;
-}
-
-sn_expr_t *sn_frame_prev_child(sn_frame_t *f)
-{
-    sn_expr_t *prev = NULL;
-    for (sn_expr_t *expr = f->expr->child_head; expr != f->cont_child; expr = expr->next) {
-        prev = expr;
-    }
-    return prev;
 }
 
 sn_error_t sn_stack_eval_andor(sn_stack_t *stack)
@@ -331,7 +313,7 @@ sn_error_t sn_stack_eval_while(sn_stack_t *stack)
         return sn_stack_push(stack, body, f->val_out);
     }
 
-    return sn_frame_goto(f, 1, NULL);
+    return sn_frame_goto(f, 1);
 }
 
 sn_error_t sn_stack_dispatch(sn_stack_t *stack)
