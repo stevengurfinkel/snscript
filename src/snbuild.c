@@ -129,7 +129,7 @@ bool sn_rtype_is_decl(sn_rtype_t type)
 
 bool sn_rtype_allows_decl(sn_rtype_t type)
 {
-    return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_DO_EXPR;
+    return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_PURE_EXPR || type == SN_RTYPE_DO_EXPR;
 }
 
 sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t rtype)

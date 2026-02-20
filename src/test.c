@@ -1339,6 +1339,22 @@ void test_pure(void)
                   "(fn (main)\n"
                   "  (aa))\n");
     ASSERT_EQ(ival(val), 246);
+
+    val = run_main(arg,
+                  "(pure (square a)\n"
+                  "  {a = {a * a}}\n"
+                  "  a)\n"
+                  "(fn (main) (square 3))\n");
+    ASSERT_EQ(ival(val), 9);
+
+    val = run_main(arg,
+                  "(pure (square a)\n"
+                  "  (let aa a)\n"
+                  "  {aa = {aa * a}}\n"
+                  "  aa)\n"
+                  "(fn (main) (square 3))\n");
+    ASSERT_EQ(ival(val), 9);
+
     sn_value_destroy(arg);
 }
 
