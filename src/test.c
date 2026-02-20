@@ -1305,6 +1305,13 @@ void test_pure(void)
                 "(fn (main i)\n"
                 "  (inc-x i))\n");
 
+    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 3, 8, "x",
+                "(let x 0)\n"
+                "(pure (twice-x)\n"
+                "  {2 * x})\n"
+                "(fn (main)\n"
+                "  (twice-x))\n");
+
     error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 4, 4, "foo",
                 "(fn (foo a b)\n"
                 "  (+ a b))\n"
@@ -1312,6 +1319,17 @@ void test_pure(void)
                 "  (foo 0 c))\n"
                 "(fn (main i)\n"
                 "  (bar i))\n");
+
+    error_build(SN_SUCCESS, 0, 0, NULL,
+                "(pure (foo a b)\n"
+                "  (== a b))\n"
+                "(fn (main) null)\n");
+
+    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 2, 4, "println",
+                "(pure (foo a b)\n"
+                "  (println a b))\n"
+                "(fn (main) null)\n");
+
 
     sn_value_t *val = NULL;
     val = run_main(arg,

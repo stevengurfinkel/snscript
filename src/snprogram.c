@@ -118,11 +118,16 @@ sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
     return sn_scope_create_const(&prog->globals, &decl->ref);
 }
 
-void sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn)
+void
+sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn, bool is_pure)
 {
+    sn_builtin_func_t *func = calloc(1, sizeof *func);
+    func->is_pure = is_pure;
+    func->fn = fn;
+
     sn_value_t *value = sn_program_add_builtin_value(prog, str);
     value->type = SN_VALUE_TYPE_BUILTIN_FN;
-    value->builtin_fn = fn;
+    value->builtin_fn = func;
 }
 
 void sn_program_add_default_symbols(sn_program_t *prog)
@@ -149,18 +154,18 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     *sn_program_add_builtin_value(prog, "false") = sn_false;
 
     // add builtin functions
-    sn_program_add_builtin_fn(prog, "int?", sn_is_int);
-    sn_program_add_builtin_fn(prog, "fn?", sn_is_fn);
-    sn_program_add_builtin_fn(prog, "null?", sn_is_null);
-    sn_program_add_builtin_fn(prog, "==", sn_equals);
-    sn_program_add_builtin_fn(prog, "!=", sn_not_equals);
-    sn_program_add_builtin_fn(prog, "!", sn_not);
-    sn_program_add_builtin_fn(prog, "+", sn_add);
-    sn_program_add_builtin_fn(prog, "-", sn_sub);
-    sn_program_add_builtin_fn(prog, "*", sn_mul);
-    sn_program_add_builtin_fn(prog, "/", sn_div);
-    sn_program_add_builtin_fn(prog, "%", sn_mod);
-    sn_program_add_builtin_fn(prog, "println", sn_println);
+    sn_program_add_builtin_fn(prog, "int?", sn_is_int, true);
+    sn_program_add_builtin_fn(prog, "fn?", sn_is_fn, true);
+    sn_program_add_builtin_fn(prog, "null?", sn_is_null, true);
+    sn_program_add_builtin_fn(prog, "==", sn_equals, true);
+    sn_program_add_builtin_fn(prog, "!=", sn_not_equals, true);
+    sn_program_add_builtin_fn(prog, "!", sn_not, true);
+    sn_program_add_builtin_fn(prog, "+", sn_add, true);
+    sn_program_add_builtin_fn(prog, "-", sn_sub, true);
+    sn_program_add_builtin_fn(prog, "*", sn_mul, true);
+    sn_program_add_builtin_fn(prog, "/", sn_div, true);
+    sn_program_add_builtin_fn(prog, "%", sn_mod, true);
+    sn_program_add_builtin_fn(prog, "println", sn_println, false);
 }
 
 sn_error_t sn_program_create(sn_program_t **program_out, const char *source, size_t size)

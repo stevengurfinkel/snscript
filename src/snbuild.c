@@ -287,8 +287,10 @@ sn_error_t sn_expr_check_fn_call(sn_expr_t *fn_expr, sn_scope_t *scope)
     assert(val != NULL);
 
     if (val->type == SN_VALUE_TYPE_BUILTIN_FN) {
-        // assume that none of the builtin fns have side effects
-        return SN_SUCCESS;
+        if (val->builtin_fn->is_pure) {
+            return SN_SUCCESS;
+        }
+        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
     }
     else if (val->type == SN_VALUE_TYPE_USER_FN) {
         if (val->user_fn->is_pure) {

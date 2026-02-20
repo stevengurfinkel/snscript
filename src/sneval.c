@@ -147,9 +147,9 @@ sn_stack_eval_call_body(sn_stack_t *stack,
         }
     }
     else {
-        status = fn->builtin_fn(f->val_out,
-                                call_value_count - 1,
-                                call_values + 1);
+        status = fn->builtin_fn->fn(f->val_out,
+                                    call_value_count - 1,
+                                    call_values + 1);
         if (status != SN_SUCCESS) {
             return sn_expr_error(f->expr, status);
         }

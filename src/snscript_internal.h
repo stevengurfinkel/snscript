@@ -68,6 +68,7 @@ typedef enum sn_scope_type_en
 typedef struct sn_symbol_st sn_symbol_t;
 typedef struct sn_expr_st sn_expr_t;
 typedef struct sn_func_st sn_func_t;
+typedef struct sn_builtin_func_st sn_builtin_func_t;
 typedef struct sn_scope_st sn_scope_t;
 typedef struct sn_const_st sn_const_t;
 typedef struct sn_block_st sn_block_t;
@@ -75,13 +76,19 @@ typedef struct sn_stack_st sn_stack_t;
 typedef struct sn_frame_st sn_frame_t;
 typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_value_t *args);
 
+struct sn_builtin_func_st
+{
+    sn_builtin_fn_t fn;
+    bool is_pure;
+};
+
 struct sn_value_st
 {
     sn_value_type_t type;
     union {
         int64_t i;
         sn_func_t *user_fn;
-        sn_builtin_fn_t builtin_fn;
+        sn_builtin_func_t *builtin_fn;
     };
 };
 
