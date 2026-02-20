@@ -1313,6 +1313,14 @@ void test_pure(void)
                 "(fn (main i)\n"
                 "  (bar i))\n");
 
+    sn_value_t *val = NULL;
+    val = run_main(arg,
+                  "(const a 123)\n"
+                  "(pure (aa)\n"
+                   " (+ a a))\n"
+                  "(fn (main)\n"
+                  "  (aa))\n");
+    ASSERT_EQ(ival(val), 246);
     sn_value_destroy(arg);
 }
 

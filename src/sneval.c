@@ -337,6 +337,7 @@ sn_error_t sn_stack_dispatch(sn_stack_t *stack)
         case SN_RTYPE_ASSIGN_EXPR:
             return sn_stack_eval_assign(stack);
 
+        case SN_RTYPE_PURE_EXPR:
         case SN_RTYPE_FN_EXPR:
             return sn_stack_pop(stack);
 
