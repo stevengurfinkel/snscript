@@ -502,7 +502,7 @@ void test_eval_nested(void)
 
 void test_variable(void)
 {
-    char *src = "(let x 12)\n"
+    char *src = "(const x 12)\n"
                 "(let y (+ x 1))\n"
                 "(fn (main) (+ x y))\n";
     sn_program_t *prog = NULL;
@@ -677,25 +677,25 @@ void test_build_error(void)
 
     // if-statement with only a 'true' arm
     error_build(SN_SUCCESS, 0, 0, NULL,
-                "(let x 0)\n"
+                "(const x 0)\n"
                 "(let y (if x 0))\n"
                 "(fn (main) null)\n");
 
     // if-statement with both a 'true' and 'false' arm
     error_build(SN_SUCCESS, 0, 0, NULL,
-                "(let x 0)\n"
+                "(const x 0)\n"
                 "(let y (if x 0 1))\n"
                 "(fn (main) null)\n");
 
     // no arms
     error_build(SN_ERROR_IF_EXPR_INVALID_LENGTH, 2, 8, NULL,
-                "(let x 0)\n"
+                "(const x 0)\n"
                 "(let y (if x))\n"
                 "(fn (main) null)\n");
 
     // three arms
     error_build(SN_ERROR_IF_EXPR_INVALID_LENGTH, 2, 8, NULL,
-                "(let x 0)\n"
+                "(const x 0)\n"
                 "(let y (if x 0 1 2))\n"
                 "(fn (main) null)\n");
 
@@ -1354,6 +1354,27 @@ void test_pure(void)
                   "  aa)\n"
                   "(fn (main) (square 3))\n");
     ASSERT_EQ(ival(val), 9);
+
+    val = run_main(arg,
+                   "(pure (sq x)\n"
+                   "  {x * x})\n"
+                   "(const a 10)\n"
+                   "(const b (sq a))\n"
+                   "(let c (sq b))\n"
+                   "(fn (main) c)\n");
+    ASSERT_EQ(ival(val), 10000);
+
+    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 2, 8, "x",
+                "(let x 10)\n"
+                "(let y x)\n"
+                "(fn (main) y)\n");
+
+    val = run_main(arg,
+                   "(let x 10)\n"
+                   "(fn (main)\n"
+                   "  (let y x)\n"
+                   "  y)\n");
+    ASSERT_EQ(ival(val), 10);
 
     sn_value_destroy(arg);
 }

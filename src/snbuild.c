@@ -283,7 +283,7 @@ sn_error_t sn_expr_check_fn_call(sn_expr_t *fn_expr, sn_scope_t *scope)
     }
 
     // lookup in globals
-    sn_value_t *val = sn_scope_get_const_value(scope->parent, ref);
+    sn_value_t *val = sn_scope_get_const_value(&fn_expr->prog->globals, ref);
     assert(val != NULL);
 
     if (val->type == SN_VALUE_TYPE_BUILTIN_FN) {
@@ -311,7 +311,11 @@ sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
         }
     }
 
-    return sn_expr_check_fn_call(expr->child_head, scope);
+    if (expr->rtype == SN_RTYPE_CALL) {
+        return sn_expr_check_fn_call(expr->child_head, scope);
+    }
+
+    return SN_SUCCESS;
 }
 
 sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
@@ -380,7 +384,10 @@ sn_error_t sn_expr_build_decl(sn_expr_t *expr, sn_scope_t *scope, sn_expr_t **na
         *name_out = name;
     }
 
+    bool orig_is_pure = scope->is_pure;
+    scope->is_pure = orig_is_pure || sn_scope_type(scope) == SN_SCOPE_TYPE_GLOBAL;
     sn_error_t status = sn_expr_build(name->next, scope);
+    scope->is_pure = orig_is_pure;
     if (status != SN_SUCCESS) {
         return status;
     }

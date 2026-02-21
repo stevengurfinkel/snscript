@@ -228,6 +228,7 @@ sn_error_t sn_scope_find_var(sn_scope_t *scope, sn_symbol_t *name, sn_ref_t *ref
 sn_value_t *sn_scope_create_const(sn_scope_t *scope, sn_ref_t *ref);
 void sn_scope_init_consts(sn_scope_t *scope, sn_value_t *values);
 sn_value_t *sn_scope_get_const_value(sn_scope_t *scope, sn_ref_t *ref);
+sn_scope_type_t sn_scope_type(sn_scope_t *scope);
 
 void sn_block_enter(sn_block_t *block, sn_scope_t *scope);
 void sn_block_leave(sn_block_t *block);
