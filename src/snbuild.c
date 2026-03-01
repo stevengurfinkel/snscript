@@ -42,6 +42,9 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     else if (sym == prog->sn_while) {
         expr->rtype = SN_RTYPE_WHILE_KEYW;
     }
+    else if (sym == prog->sn_return) {
+        expr->rtype = SN_RTYPE_RETURN_KEYW;
+    }
     else {
         expr->rtype = SN_RTYPE_VAR;
     }
@@ -121,7 +124,7 @@ sn_error_t sn_while_expr_check(sn_expr_t *expr)
 
 sn_error_t sn_return_expr_check(sn_expr_t *expr)
 {
-    if (expr->child_count <= 2) {
+    if (expr->child_count > 2) {
         return sn_expr_error(expr, SN_ERROR_RETURN_EXPR_TOO_LONG);
     }
 
@@ -197,7 +200,7 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
             return sn_while_expr_check(expr);
 
         case SN_RTYPE_RETURN_KEYW:
-            expr->type = SN_RTYPE_RETURN_EXPR;
+            expr->rtype = SN_RTYPE_RETURN_EXPR;
             return sn_return_expr_check(expr);
 
         case SN_RTYPE_LET_EXPR:

@@ -1406,6 +1406,30 @@ void test_fns_decleared_first(void)
                 "  (foo 2))\n");
 }
 
+void test_return(void)
+{
+    sn_value_t *arg = sn_value_create();
+    sn_value_t *val = NULL;
+
+    val = run_main(arg,
+                   "(fn (main)\n"
+                   "  (bar 0))\n"
+                   "(fn (bar x)\n"
+                   "  (if {x == 0}\n"
+                   "    (return -1))\n"
+                   "  x)\n");
+    ASSERT_EQ(ival(val), -1);
+
+//    sn_value_set_integer(arg, 0);
+//    val = run_main(arg,
+//                   "(fn (main x)\n"
+//                   "  (if {x == 0}\n"
+//                   "    (return -1))\n"
+//                   "  x)\n");
+//    ASSERT_EQ(ival(val), -1);
+    sn_value_destroy(arg);
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1453,6 +1477,7 @@ int main(int argc, char **argv)
     test_main();
     test_pure();
     test_fns_decleared_first();
+    test_return();
     printf("PASSED\n");
     return 0;
 }

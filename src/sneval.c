@@ -173,8 +173,8 @@ sn_error_t sn_stack_eval_return(sn_stack_t *stack)
         sn_stack_pop(stack);
     }
 
-    *f->val_out = *val_out;
-    return SN_SUCCESS;
+    *sn_stack_top(stack)->val_out = *val_out;
+    return sn_stack_pop(stack);
 }
 
 sn_error_t sn_stack_eval_call(sn_stack_t *stack)
