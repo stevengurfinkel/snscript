@@ -1298,57 +1298,56 @@ void test_main(void)
 void test_pure(void)
 {
     sn_value_t *arg = sn_value_create();
-    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 3, 4, "x",
+    error_build(SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER, 2, 11, "x",
                 "(let x 0)\n"
-                "(pure (inc-x a)\n"
-                "  {x = {a + x}})\n"
+                "(const y {x + 1})\n"
                 "(fn (main i)\n"
-                "  (inc-x i))\n");
+                "  y)\n");
 
-    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 3, 8, "x",
-                "(let x 0)\n"
-                "(pure (twice-x)\n"
+    error_build(SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER, 3, 8, "x",
+                "(let x 10)\n"
+                "(let twice-x\n"
                 "  {2 * x})\n"
                 "(fn (main)\n"
-                "  (twice-x))\n");
+                "  twice-x)\n");
 
-    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 4, 4, "foo",
+    error_build(SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER, 4, 4, "foo",
                 "(fn (foo a b)\n"
                 "  (+ a b))\n"
-                "(pure (bar c)\n"
-                "  (foo 0 c))\n"
+                "(let bar\n"
+                "  (foo 0 1))\n"
                 "(fn (main i)\n"
-                "  (bar i))\n");
+                "  bar)\n");
 
     error_build(SN_SUCCESS, 0, 0, NULL,
-                "(pure (foo a b)\n"
+                "(fn (foo a b)\n"
                 "  (== a b))\n"
                 "(fn (main) null)\n");
 
-    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 2, 4, "println",
-                "(pure (foo a b)\n"
-                "  (println a b))\n"
+    error_build(SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER, 2, 4, "println",
+                "(let foo\n"
+                "  (println 1 2))\n"
                 "(fn (main) null)\n");
 
 
     sn_value_t *val = NULL;
     val = run_main(arg,
                   "(const a 123)\n"
-                  "(pure (aa)\n"
+                  "(fn (aa)\n"
                    " (+ a a))\n"
                   "(fn (main)\n"
                   "  (aa))\n");
     ASSERT_EQ(ival(val), 246);
 
     val = run_main(arg,
-                  "(pure (square a)\n"
+                  "(fn (square a)\n"
                   "  {a = {a * a}}\n"
                   "  a)\n"
                   "(fn (main) (square 3))\n");
     ASSERT_EQ(ival(val), 9);
 
     val = run_main(arg,
-                  "(pure (square a)\n"
+                  "(fn (square a)\n"
                   "  (let aa a)\n"
                   "  {aa = {aa * a}}\n"
                   "  aa)\n"
@@ -1356,15 +1355,13 @@ void test_pure(void)
     ASSERT_EQ(ival(val), 9);
 
     val = run_main(arg,
-                   "(pure (sq x)\n"
-                   "  {x * x})\n"
                    "(const a 10)\n"
-                   "(const b (sq a))\n"
-                   "(let c (sq b))\n"
+                   "(const b {a * a})\n"
+                   "(let c {b * b})\n"
                    "(fn (main) c)\n");
     ASSERT_EQ(ival(val), 10000);
 
-    error_build(SN_ERROR_NOT_ALLOWED_IN_PURE_FN, 2, 8, "x",
+    error_build(SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER, 2, 8, "x",
                 "(let x 10)\n"
                 "(let y x)\n"
                 "(fn (main) y)\n");

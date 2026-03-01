@@ -8,6 +8,7 @@ sn_value_t sn_true = { .type = SN_VALUE_TYPE_BOOLEAN, .i = true };
 
 sn_error_t sn_expr_set_rtype(sn_expr_t *expr);
 sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope);
+sn_error_t sn_expr_check_global_fn_call(sn_expr_t *expr, sn_scope_t *scope);
 
 sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
 {
@@ -40,9 +41,6 @@ sn_error_t sn_symbol_set_rtype(sn_expr_t *expr)
     }
     else if (sym == prog->sn_while) {
         expr->rtype = SN_RTYPE_WHILE_KEYW;
-    }
-    else if (sym == prog->sn_pure) {
-        expr->rtype = SN_RTYPE_PURE_KEYW;
     }
     else {
         expr->rtype = SN_RTYPE_VAR;
@@ -129,7 +127,7 @@ bool sn_rtype_is_decl(sn_rtype_t type)
 
 bool sn_rtype_allows_decl(sn_rtype_t type)
 {
-    return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_PURE_EXPR || type == SN_RTYPE_DO_EXPR;
+    return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_DO_EXPR;
 }
 
 sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t rtype)
@@ -176,10 +174,6 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
             expr->rtype = SN_RTYPE_WHILE_EXPR;
             return sn_while_expr_check(expr);
 
-        case SN_RTYPE_PURE_KEYW:
-            expr->rtype = SN_RTYPE_PURE_EXPR;
-            return sn_fn_expr_check(expr);
-
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
@@ -189,7 +183,6 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
         case SN_RTYPE_AND_EXPR:
         case SN_RTYPE_OR_EXPR:
         case SN_RTYPE_WHILE_EXPR:
-        case SN_RTYPE_PURE_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -204,8 +197,7 @@ bool sn_rtype_only_in_fn(sn_rtype_t rtype)
 {
     return rtype != SN_RTYPE_CONST_EXPR &&
            rtype != SN_RTYPE_LET_EXPR &&
-           rtype != SN_RTYPE_FN_EXPR &&
-           rtype != SN_RTYPE_PURE_EXPR;
+           rtype != SN_RTYPE_FN_EXPR;
 }
 
 sn_error_t sn_list_set_rtype(sn_expr_t *expr)
@@ -265,38 +257,66 @@ sn_error_t sn_expr_set_rtype(sn_expr_t *expr)
     return SN_ERROR_GENERIC;
 }
 
-sn_error_t sn_expr_check_fn_call(sn_expr_t *fn_expr, sn_scope_t *scope)
+bool sn_expr_rtype_allowed_in_global_initialier(sn_expr_t *expr)
 {
-    if (!scope->is_pure) {
-        return SN_SUCCESS;
+    sn_rtype_t rtype = expr->rtype;
+    return rtype == SN_RTYPE_IF_KEYW ||
+           rtype == SN_RTYPE_AND_KEYW ||
+           rtype == SN_RTYPE_OR_KEYW ||
+           rtype == SN_RTYPE_IF_EXPR ||
+           rtype == SN_RTYPE_AND_EXPR ||
+           rtype == SN_RTYPE_OR_EXPR ||
+           rtype == SN_RTYPE_VAR ||
+           rtype == SN_RTYPE_LITERAL ||
+           rtype == SN_RTYPE_CALL;
+}
+
+sn_error_t sn_expr_check_global_initializer(sn_expr_t *expr, sn_scope_t *scope)
+{
+    if (!sn_expr_rtype_allowed_in_global_initialier(expr)) {
+        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER);
     }
 
+    if (expr->rtype == SN_RTYPE_VAR) {
+        sn_ref_t *ref = &expr->ref;
+        if (!ref->is_const) {
+            return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER);
+        }
+    }
+
+    for (int i = 0; i < expr->child_count; i++) {
+        sn_error_t status = sn_expr_check_global_initializer(&expr->child_head[i], scope);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+    }
+
+    if (expr->rtype == SN_RTYPE_CALL) {
+        return sn_expr_check_global_fn_call(expr->child_head, scope);
+    }
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_expr_check_global_fn_call(sn_expr_t *expr, sn_scope_t *scope)
+{
     // function calls must be a direct variable
-    if (fn_expr->rtype != SN_RTYPE_VAR) {
-        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    if (expr->rtype != SN_RTYPE_VAR) {
+        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER);
     }
 
-    // functions are global
-    sn_ref_t *ref = &fn_expr->ref;
-    if (ref->type != SN_SCOPE_TYPE_GLOBAL) {
-        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    // builtin functions are global
+    sn_ref_t *ref = &expr->ref;
+    assert(ref->type == SN_SCOPE_TYPE_GLOBAL);
+
+    // builtin functions are build-time constants
+    sn_value_t *val = sn_scope_get_const_value(&expr->prog->globals, ref);
+    if (val == NULL || val->type != SN_VALUE_TYPE_BUILTIN_FN) {
+        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER);
     }
 
-    // lookup in globals
-    sn_value_t *val = sn_scope_get_const_value(&fn_expr->prog->globals, ref);
-    assert(val != NULL);
-
-    if (val->type == SN_VALUE_TYPE_BUILTIN_FN) {
-        if (val->builtin_fn->is_pure) {
-            return SN_SUCCESS;
-        }
-        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
-    }
-    else if (val->type == SN_VALUE_TYPE_USER_FN) {
-        if (val->user_fn->is_pure) {
-            return SN_SUCCESS;
-        }
-        return sn_expr_error(fn_expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
+    if (!val->builtin_fn->is_allowed_in_globals) {
+        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_GLOBAL_INITIALIZER);
     }
 
     return SN_SUCCESS;
@@ -311,20 +331,13 @@ sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
         }
     }
 
-    if (expr->rtype == SN_RTYPE_CALL) {
-        return sn_expr_check_fn_call(expr->child_head, scope);
-    }
-
     return SN_SUCCESS;
 }
 
 sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
 {
     sn_func_t *func = calloc(sizeof *func, 1);
-    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW ||
-           expr->child_head->rtype == SN_RTYPE_PURE_KEYW);
-
-    func->is_pure = expr->child_head->rtype == SN_RTYPE_PURE_KEYW;
+    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
 
     sn_expr_t *proto = expr->child_head->next;
     assert(proto->rtype == SN_RTYPE_CALL);
@@ -340,7 +353,6 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     val->user_fn = func;
 
     func->scope.parent = parent_scope;
-    func->scope.is_pure = func->is_pure;
 
     // go through all of the parameters
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
@@ -384,10 +396,7 @@ sn_error_t sn_expr_build_decl(sn_expr_t *expr, sn_scope_t *scope, sn_expr_t **na
         *name_out = name;
     }
 
-    bool orig_is_pure = scope->is_pure;
-    scope->is_pure = orig_is_pure || sn_scope_type(scope) == SN_SCOPE_TYPE_GLOBAL;
     sn_error_t status = sn_expr_build(name->next, scope);
-    scope->is_pure = orig_is_pure;
     if (status != SN_SUCCESS) {
         return status;
     }
@@ -397,8 +406,15 @@ sn_error_t sn_expr_build_decl(sn_expr_t *expr, sn_scope_t *scope, sn_expr_t **na
         return sn_expr_error(name, status);
     }
 
-    if (name->ref.type == SN_SCOPE_TYPE_GLOBAL && name->sym == expr->prog->sn_main) {
-        return sn_expr_error(name, SN_ERROR_GLOBAL_MAIN_NOT_FN);
+    if (name->ref.type == SN_SCOPE_TYPE_GLOBAL) {
+        status = sn_expr_check_global_initializer(name->next, scope);
+        if (status != SN_SUCCESS) {
+            return status;
+        }
+
+        if (name->sym == expr->prog->sn_main) {
+            return sn_expr_error(name, SN_ERROR_GLOBAL_MAIN_NOT_FN);
+        }
     }
 
     return status;
@@ -426,10 +442,6 @@ sn_error_t sn_expr_build_var(sn_expr_t *expr, sn_scope_t *scope)
     sn_error_t status = sn_scope_find_var(scope, expr->sym, &expr->ref);
     if (status != SN_SUCCESS) {
         return sn_expr_error(expr, status);
-    }
-
-    if (scope->is_pure && expr->ref.type == SN_SCOPE_TYPE_GLOBAL && !expr->ref.is_const) {
-        return sn_expr_error(expr, SN_ERROR_NOT_ALLOWED_IN_PURE_FN);
     }
 
     return status;
@@ -484,7 +496,6 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_AND_KEYW:
         case SN_RTYPE_OR_KEYW:
         case SN_RTYPE_WHILE_KEYW:
-        case SN_RTYPE_PURE_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -492,7 +503,6 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
             return sn_expr_build_let(expr, scope);
 
         case SN_RTYPE_FN_EXPR:
-        case SN_RTYPE_PURE_EXPR:
             return sn_expr_create_fn(expr, scope);
 
         case SN_RTYPE_IF_EXPR:

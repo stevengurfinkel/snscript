@@ -39,7 +39,7 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(WRONG_VALUE_TYPE);
         SN_ERROR_CASE(WRONG_ARG_COUNT_IN_CALL);
         SN_ERROR_CASE(LAZY_EXPR_TOO_SHORT);
-        SN_ERROR_CASE(NOT_ALLOWED_IN_PURE_FN);
+        SN_ERROR_CASE(NOT_ALLOWED_IN_GLOBAL_INITIALIZER);
         SN_ERROR_CASE(GENERIC);
     }
     return NULL;
@@ -119,10 +119,13 @@ sn_value_t *sn_program_add_builtin_value(sn_program_t *prog, const char *str)
 }
 
 void
-sn_program_add_builtin_fn(sn_program_t *prog, const char *str, sn_builtin_fn_t fn, bool is_pure)
+sn_program_add_builtin_fn(sn_program_t *prog,
+                          const char *str,
+                          sn_builtin_fn_t fn,
+                          bool is_allowed_in_globals)
 {
     sn_builtin_func_t *func = calloc(1, sizeof *func);
-    func->is_pure = is_pure;
+    func->is_allowed_in_globals = is_allowed_in_globals;
     func->fn = fn;
 
     sn_value_t *value = sn_program_add_builtin_value(prog, str);
@@ -142,7 +145,6 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_and = sn_program_default_symbol(prog, "&&");
     prog->sn_or = sn_program_default_symbol(prog, "||");
     prog->sn_while = sn_program_default_symbol(prog, "while");
-    prog->sn_pure = sn_program_default_symbol(prog, "pure");
 
     // entry point defined by script
     prog->sn_main = sn_program_default_symbol(prog, "main");

@@ -37,7 +37,6 @@ typedef enum sn_rtype_st
     SN_RTYPE_AND_KEYW,
     SN_RTYPE_OR_KEYW,
     SN_RTYPE_WHILE_KEYW,
-    SN_RTYPE_PURE_KEYW,
 
     SN_RTYPE_LET_EXPR,
     SN_RTYPE_FN_EXPR,
@@ -48,7 +47,6 @@ typedef enum sn_rtype_st
     SN_RTYPE_AND_EXPR,
     SN_RTYPE_OR_EXPR,
     SN_RTYPE_WHILE_EXPR,
-    SN_RTYPE_PURE_EXPR,
 
     SN_RTYPE_VAR,
     SN_RTYPE_LITERAL,
@@ -79,7 +77,7 @@ typedef sn_error_t (*sn_builtin_fn_t)(sn_value_t *ret, int arg_count, const sn_v
 struct sn_builtin_func_st
 {
     sn_builtin_fn_t fn;
-    bool is_pure;
+    bool is_allowed_in_globals;
 };
 
 struct sn_value_st
@@ -139,7 +137,6 @@ struct sn_scope_st
     sn_expr_t *decl_head;
     int cur_decl_count;
     int max_decl_count;
-    bool is_pure;
 };
 
 struct sn_block_st
@@ -151,7 +148,6 @@ struct sn_block_st
 
 struct sn_func_st
 {
-    bool is_pure;
     int param_count;
     sn_scope_t scope;
     sn_symbol_t *name;
