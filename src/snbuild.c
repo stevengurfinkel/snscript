@@ -365,29 +365,19 @@ sn_error_t sn_expr_build_children(sn_expr_t *expr, sn_scope_t *scope)
     return SN_SUCCESS;
 }
 
-sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
+sn_error_t sn_expr_build_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
 {
-    sn_func_t *func = calloc(sizeof *func, 1);
-    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
-
     sn_expr_t *proto = expr->child_head->next;
-    assert(proto->rtype == SN_RTYPE_CALL);
     sn_expr_t *name = proto->child_head;
+    sn_value_t *val = sn_scope_get_const_value(parent_scope, &name->ref);
 
-    sn_error_t status = sn_scope_add_var(parent_scope, name);
-    if (status != SN_SUCCESS) {
-        return sn_expr_error(name, status);
-    }
-
-    sn_value_t *val = sn_scope_create_const(parent_scope, &name->ref);
-    val->type = SN_VALUE_TYPE_USER_FN;
-    val->user_fn = func;
-
+    assert(val->type == SN_VALUE_TYPE_USER_FN);
+    sn_func_t *func = val->user_fn;
     func->scope.parent = parent_scope;
 
     // go through all of the parameters
     for (sn_expr_t *param = proto->child_head->next; param != NULL; param = param->next) {
-        status = sn_scope_add_var(&func->scope, param);
+        sn_error_t status = sn_scope_add_var(&func->scope, param);
         if (status != SN_SUCCESS) {
             return sn_expr_error(param, status);
         }
@@ -408,11 +398,31 @@ sn_error_t sn_expr_create_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
     func->body_count = expr->child_count - 2;
 
     for (sn_expr_t *expr = func->body; expr != NULL; expr = expr->next) {
-        status = sn_expr_build(expr, &func->scope);
+        sn_error_t status = sn_expr_build(expr, &func->scope);
         if (status != SN_SUCCESS) {
             return status;
         }
     }
+
+    return SN_SUCCESS;
+}
+
+sn_error_t sn_expr_alloc_fn(sn_expr_t *expr, sn_scope_t *parent_scope)
+{
+    assert(expr->child_head->rtype == SN_RTYPE_FN_KEYW);
+
+    sn_expr_t *proto = expr->child_head->next;
+    assert(proto->rtype == SN_RTYPE_CALL);
+    sn_expr_t *name = proto->child_head;
+
+    sn_error_t status = sn_scope_add_var(parent_scope, name);
+    if (status != SN_SUCCESS) {
+        return sn_expr_error(name, status);
+    }
+
+    sn_value_t *val = sn_scope_create_const(parent_scope, &name->ref);
+    val->type = SN_VALUE_TYPE_USER_FN;
+    val->user_fn = calloc(sizeof (sn_func_t), 1);
 
     return SN_SUCCESS;
 }
@@ -535,7 +545,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
             return sn_expr_build_let(expr, scope);
 
         case SN_RTYPE_FN_EXPR:
-            return sn_expr_create_fn(expr, scope);
+            return sn_expr_build_fn(expr, scope);
 
         case SN_RTYPE_DO_EXPR:
             return sn_expr_build_do(expr, scope);
@@ -562,9 +572,29 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
     return SN_ERROR_GENERIC;
 }
 
+sn_error_t sn_program_alloc_fns(sn_program_t *prog)
+{
+    for (int i = 0; i < prog->expr.child_count; i++) {
+        sn_expr_t *expr = &prog->expr.child_head[i];
+        if (expr->rtype == SN_RTYPE_FN_EXPR) {
+            sn_error_t status = sn_expr_alloc_fn(expr, &prog->globals);
+            if (status != SN_SUCCESS) {
+                return status;
+            }
+        }
+    }
+
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_program_build(sn_program_t *prog)
 {
     sn_error_t status = sn_expr_set_rtype(&prog->expr);
+    if (status != SN_SUCCESS) {
+        return status;
+    }
+
+    status = sn_program_alloc_fns(prog);
     if (status != SN_SUCCESS) {
         return status;
     }

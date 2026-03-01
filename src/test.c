@@ -657,7 +657,8 @@ void test_build_error(void)
                 "(fn (main) null)\n");
 
     // function name must not already be declared
-    error_build(SN_ERROR_REDECLARED, 2, 6, "foo",
+    // function names are declared first so the error is reported in the let
+    error_build(SN_ERROR_REDECLARED, 1, 6, "foo",
                 "(let foo 1)\n"
                 "(fn (foo) 1)\n"
                 "(fn (main) null)\n");
@@ -1376,6 +1377,35 @@ void test_pure(void)
     sn_value_destroy(arg);
 }
 
+void test_fns_decleared_first(void)
+{
+    sn_value_t *arg = sn_value_create();
+    sn_value_t *val = NULL;
+
+    val = run_main(arg,
+                   "(fn (main)\n"
+                    "  (triple 2))\n"
+                    "(fn (triple x)\n"
+                    "  {x * 3})\n");
+    ASSERT_EQ(ival(val), 6);
+
+    val = run_main(arg,
+                   "(fn (foo f)\n"
+                   "  {f + (x)})\n"
+                   "(fn (x) 2)\n"
+                   "(fn (main)\n"
+                   "  (foo 2))\n");
+    ASSERT_EQ(ival(val), 4);
+    sn_value_destroy(arg);
+
+    error_build(SN_ERROR_UNDECLARED, 2, 8, "x",
+                "(fn (foo f)\n"
+                "  {f + x})\n"
+                "(let x 2)\n"
+                "(fn (main)\n"
+                "  (foo 2))\n");
+}
+
 int main(int argc, char **argv)
 {
     test_prog_create_destroy();
@@ -1422,6 +1452,7 @@ int main(int argc, char **argv)
     test_while();
     test_main();
     test_pure();
+    test_fns_decleared_first();
     printf("PASSED\n");
     return 0;
 }
