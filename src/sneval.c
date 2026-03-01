@@ -158,6 +158,25 @@ sn_stack_eval_call_body(sn_stack_t *stack,
     return sn_stack_pop(stack);
 }
 
+sn_error_t sn_stack_eval_return(sn_stack_t *stack)
+{
+    sn_frame_t *f = sn_stack_top(stack);
+
+    if (f->cont_pos == 0) {
+        sn_expr_t *expr = f->expr->child_head->next;
+        f->cont_pos++;
+        return sn_stack_push(stack, expr, f->val_out);
+    }
+
+    sn_value_t *val_out = f->val_out;
+    while (sn_stack_top(stack)->expr->rtype != SN_RTYPE_CALL) {
+        sn_stack_pop(stack);
+    }
+
+    *f->val_out = *val_out;
+    return SN_SUCCESS;
+}
+
 sn_error_t sn_stack_eval_call(sn_stack_t *stack)
 {
     sn_frame_t *f = sn_stack_top(stack);
@@ -352,6 +371,9 @@ sn_error_t sn_stack_dispatch(sn_stack_t *stack)
 
         case SN_RTYPE_WHILE_EXPR:
             return sn_stack_eval_while(stack);
+
+        case SN_RTYPE_RETURN_EXPR:
+            return sn_stack_eval_return(stack);
 
         case SN_EXPR_TYPE_INVALID:
         default:

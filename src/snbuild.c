@@ -119,6 +119,14 @@ sn_error_t sn_while_expr_check(sn_expr_t *expr)
     return SN_SUCCESS;
 }
 
+sn_error_t sn_return_expr_check(sn_expr_t *expr)
+{
+    if (expr->child_count <= 2) {
+        return sn_expr_error(expr, SN_ERROR_RETURN_EXPR_TOO_LONG);
+    }
+
+    return SN_SUCCESS;
+}
 
 bool sn_rtype_is_decl(sn_rtype_t type)
 {
@@ -128,6 +136,20 @@ bool sn_rtype_is_decl(sn_rtype_t type)
 bool sn_rtype_allows_decl(sn_rtype_t type)
 {
     return type == SN_RTYPE_FN_EXPR || type == SN_RTYPE_DO_EXPR;
+}
+
+bool sn_rtype_is_jump(sn_rtype_t type)
+{
+    return type == SN_RTYPE_RETURN_EXPR;
+}
+
+bool sn_expr_allows_jump(sn_expr_t *expr, int child_idx)
+{
+    sn_rtype_t rtype = expr->rtype;
+    return rtype == SN_RTYPE_FN_EXPR ||
+           rtype == SN_RTYPE_DO_EXPR ||
+           (rtype == SN_RTYPE_IF_EXPR && child_idx > 2) ||
+           (rtype == SN_RTYPE_WHILE_EXPR && child_idx > 2);
 }
 
 sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t rtype)
@@ -174,6 +196,10 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
             expr->rtype = SN_RTYPE_WHILE_EXPR;
             return sn_while_expr_check(expr);
 
+        case SN_RTYPE_RETURN_KEYW:
+            expr->type = SN_RTYPE_RETURN_EXPR;
+            return sn_return_expr_check(expr);
+
         case SN_RTYPE_LET_EXPR:
         case SN_RTYPE_FN_EXPR:
         case SN_RTYPE_IF_EXPR:
@@ -183,6 +209,7 @@ sn_error_t sn_list_set_rtype_from_first_child_rtype(sn_expr_t *expr, sn_rtype_t 
         case SN_RTYPE_AND_EXPR:
         case SN_RTYPE_OR_EXPR:
         case SN_RTYPE_WHILE_EXPR:
+        case SN_RTYPE_RETURN_EXPR:
         case SN_RTYPE_VAR:
         case SN_RTYPE_LITERAL:
         case SN_RTYPE_CALL:
@@ -228,12 +255,16 @@ sn_error_t sn_list_set_rtype(sn_expr_t *expr)
         return status;
     }
 
-    for (sn_expr_t *child = expr->child_head; child != NULL; child = child->next) {
+    for (int i = 0; i < expr->child_count; i++) {
+        sn_expr_t *child = &expr->child_head[i];
         if (child->rtype == SN_RTYPE_FN_EXPR) {
             return sn_expr_error(child, SN_ERROR_NESTED_FN_EXPR);
         }
         else if (sn_rtype_is_decl(child->rtype) && !sn_rtype_allows_decl(expr->rtype)) {
             return sn_expr_error(child, SN_ERROR_NESTED_LET_EXPR);
+        }
+        else if (sn_rtype_is_jump(child->rtype) && sn_expr_allows_jump(expr, i)) {
+            return sn_expr_error(child, SN_ERROR_NESTED_JUMP_EXPR);
         }
     }
 
@@ -496,6 +527,7 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
         case SN_RTYPE_AND_KEYW:
         case SN_RTYPE_OR_KEYW:
         case SN_RTYPE_WHILE_KEYW:
+        case SN_RTYPE_RETURN_KEYW:
         case SN_RTYPE_LITERAL:
             return SN_SUCCESS;
 
@@ -504,9 +536,6 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 
         case SN_RTYPE_FN_EXPR:
             return sn_expr_create_fn(expr, scope);
-
-        case SN_RTYPE_IF_EXPR:
-            return sn_expr_build_children(expr, scope);
 
         case SN_RTYPE_DO_EXPR:
             return sn_expr_build_do(expr, scope);
@@ -522,9 +551,11 @@ sn_error_t sn_expr_build(sn_expr_t *expr, sn_scope_t *scope)
 
         case SN_RTYPE_CALL:
         case SN_RTYPE_PROGRAM:
+        case SN_RTYPE_IF_EXPR:
         case SN_RTYPE_AND_EXPR:
         case SN_RTYPE_OR_EXPR:
         case SN_RTYPE_WHILE_EXPR:
+        case SN_RTYPE_RETURN_EXPR:
             return sn_expr_build_children(expr, scope);
     }
 

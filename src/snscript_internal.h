@@ -37,6 +37,7 @@ typedef enum sn_rtype_st
     SN_RTYPE_AND_KEYW,
     SN_RTYPE_OR_KEYW,
     SN_RTYPE_WHILE_KEYW,
+    SN_RTYPE_RETURN_KEYW,
 
     SN_RTYPE_LET_EXPR,
     SN_RTYPE_FN_EXPR,
@@ -47,6 +48,7 @@ typedef enum sn_rtype_st
     SN_RTYPE_AND_EXPR,
     SN_RTYPE_OR_EXPR,
     SN_RTYPE_WHILE_EXPR,
+    SN_RTYPE_RETURN_EXPR,
 
     SN_RTYPE_VAR,
     SN_RTYPE_LITERAL,
@@ -199,7 +201,7 @@ struct sn_program_st
     sn_symbol_t *sn_and;
     sn_symbol_t *sn_or;
     sn_symbol_t *sn_while;
-    sn_symbol_t *sn_pure;
+    sn_symbol_t *sn_return;
 
     // entry point to be defined by script
     sn_symbol_t *sn_main;

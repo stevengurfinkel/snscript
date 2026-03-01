@@ -22,12 +22,14 @@ const char *sn_error_str(sn_error_t status)
         SN_ERROR_CASE(FN_EXPR_TOO_SHORT);
         SN_ERROR_CASE(DO_EXPR_TOO_SHORT);
         SN_ERROR_CASE(WHILE_EXPR_WRONG_LENGTH);
+        SN_ERROR_CASE(RETURN_EXPR_TOO_LONG);
         SN_ERROR_CASE(FN_PROTO_NOT_LIST);
         SN_ERROR_CASE(FN_PROTO_COTAINS_NON_SYMBOLS);
         SN_ERROR_CASE(IF_EXPR_INVALID_LENGTH);
         SN_ERROR_CASE(EMPTY_EXPR);
         SN_ERROR_CASE(NESTED_FN_EXPR);
         SN_ERROR_CASE(NESTED_LET_EXPR);
+        SN_ERROR_CASE(NESTED_JUMP_EXPR);
         SN_ERROR_CASE(UNDECLARED);
         SN_ERROR_CASE(REDECLARED);
         SN_ERROR_CASE(EXPR_OUTSIDE_OF_FN);
@@ -145,6 +147,7 @@ void sn_program_add_default_symbols(sn_program_t *prog)
     prog->sn_and = sn_program_default_symbol(prog, "&&");
     prog->sn_or = sn_program_default_symbol(prog, "||");
     prog->sn_while = sn_program_default_symbol(prog, "while");
+    prog->sn_return = sn_program_default_symbol(prog, "return");
 
     // entry point defined by script
     prog->sn_main = sn_program_default_symbol(prog, "main");
